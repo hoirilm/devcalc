@@ -149,4 +149,25 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $response = $this->actingAs($this->sales2)->get(route('projects.pdf', $project));
         $response->assertStatus(403);
     }
+
+    public function test_language_switcher_switches_session_locale(): void
+    {
+        $response = $this->get(route('language.switch', 'id'));
+        $response->assertSessionHas('locale', 'id');
+
+        $response = $this->get(route('language.switch', 'en'));
+        $response->assertSessionHas('locale', 'en');
+    }
+
+    public function test_help_page_can_be_rendered(): void
+    {
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Pages\Help::class)
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->sales1)
+            ->test(\App\Filament\Pages\Help::class)
+            ->assertSuccessful();
+    }
 }
+

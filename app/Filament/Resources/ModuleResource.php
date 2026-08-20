@@ -16,9 +16,27 @@ class ModuleResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static ?string $navigationGroup = 'Master Data';
-
     protected static ?int $navigationSort = 1;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return app()->getLocale() === 'id' ? 'Data Master' : 'Master Data';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return app()->getLocale() === 'id' ? 'Katalog Modul' : 'Feature Modules';
+    }
+
+    public static function getModelLabel(): string
+    {
+        return app()->getLocale() === 'id' ? 'Modul Fitur' : 'Feature Module';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return app()->getLocale() === 'id' ? 'Katalog Modul' : 'Feature Modules';
+    }
 
     public static function canViewAny(): bool
     {
@@ -34,29 +52,28 @@ class ModuleResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Feature Module Details')
-                    ->description('Manage standardized software development features and base pricing.')
+                Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Detail Modul Fitur' : 'Feature Module Details')
+                    ->description(app()->getLocale() === 'id' ? 'Kelola katalog fitur standar software beserta harga dasar.' : 'Manage standardized software development features and base pricing.')
                     ->schema([
                         Forms\Components\TextInput::make('name')
-                            ->label('Module Name')
+                            ->label(app()->getLocale() === 'id' ? 'Nama Modul' : 'Module Name')
                             ->placeholder('e.g. Authentication & RBAC')
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('category')
-                            ->label('Category / Domain')
+                            ->label(app()->getLocale() === 'id' ? 'Kategori / Domain' : 'Category / Domain')
                             ->placeholder('e.g. Core Security, Backend & API, Fintech')
                             ->maxLength(255),
 
                         Forms\Components\TextInput::make('base_price')
-                            ->label('Base Price (IDR)')
+                            ->label(app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)')
                             ->required()
-                            ->numeric()
+                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                             ->prefix('Rp')
                             ->minValue(0)
-                            ->step(10000)
-                            ->helperText('Standard base price before complexity multiplier and currency exchange.'),
+                            ->helperText(app()->getLocale() === 'id' ? 'Harga acuan standar sebelum dikalikan bobot kompleksitas.' : 'Standard base price before complexity multiplier and currency exchange.'),
                     ])->columns(2),
             ]);
     }
@@ -66,20 +83,20 @@ class ModuleResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label('Module Name')
+                    ->label(app()->getLocale() === 'id' ? 'Nama Modul' : 'Module Name')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('category')
-                    ->label('Category')
+                    ->label(app()->getLocale() === 'id' ? 'Kategori' : 'Category')
                     ->searchable()
                     ->badge()
                     ->color('info')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('base_price')
-                    ->label('Base Price (IDR)')
+                    ->label(app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)')
                     ->money('IDR', locale: 'id')
                     ->sortable(),
 
@@ -90,6 +107,7 @@ class ModuleResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('category')
+                    ->label(app()->getLocale() === 'id' ? 'Filter Kategori' : 'Filter Category')
                     ->options(fn () => Module::query()->whereNotNull('category')->distinct()->pluck('category', 'category')->toArray()),
             ])
             ->actions([

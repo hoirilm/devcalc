@@ -20,9 +20,27 @@ class ProjectResource extends Resource
 
     protected static ?string $navigationIcon = 'heroicon-o-calculator';
 
-    protected static ?string $navigationGroup = 'Estimation';
-
     protected static ?int $navigationSort = 2;
+
+    public static function getNavigationGroup(): ?string
+    {
+        return app()->getLocale() === 'id' ? 'Kalkulator & Estimasi' : 'Estimation & Calculator';
+    }
+
+    public static function getNavigationLabel(): string
+    {
+        return app()->getLocale() === 'id' ? 'Daftar Penawaran' : 'Quotations';
+    }
+
+    public static function getModelLabel(): string
+    {
+        return app()->getLocale() === 'id' ? 'Penawaran Proyek' : 'Project Quotation';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return app()->getLocale() === 'id' ? 'Daftar Penawaran' : 'Quotations';
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -41,18 +59,18 @@ class ProjectResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Project & Client Overview')
-                    ->description('Specify project quotation metadata, target currency, and locked exchange rate.')
+                Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Informasi Proyek & Klien' : 'Project & Client Overview')
+                    ->description(app()->getLocale() === 'id' ? 'Tentukan data penawaran, target mata uang, dan nilai kurs tukar (lock-rate).' : 'Specify project quotation metadata, target currency, and locked exchange rate.')
                     ->schema([
                         Forms\Components\TextInput::make('client_name')
-                            ->label('Client Name / Organization')
+                            ->label(app()->getLocale() === 'id' ? 'Nama Klien / Perusahaan' : 'Client Name / Organization')
                             ->placeholder('e.g. PT Maju Bersama Digital')
                             ->required()
                             ->maxLength(255)
                             ->columnSpan(2),
 
                         Forms\Components\Select::make('currency_code')
-                            ->label('Currency')
+                            ->label(app()->getLocale() === 'id' ? 'Mata Uang' : 'Currency')
                             ->options([
                                 'IDR' => 'IDR - Indonesian Rupiah',
                                 'USD' => 'USD - US Dollar',
@@ -76,20 +94,20 @@ class ProjectResource extends Resource
                             }),
 
                         Forms\Components\TextInput::make('exchange_rate')
-                            ->label('Exchange Rate (in IDR)')
+                            ->label(app()->getLocale() === 'id' ? 'Nilai Kurs (dalam IDR)' : 'Exchange Rate (in IDR)')
                             ->required()
-                            ->numeric()
+                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                             ->default(1.00)
                             ->minValue(0.01)
                             ->live(onBlur: true)
                             ->prefix('Rp')
-                            ->helperText('1 unit of selected currency = X Rupiah.')
+                            ->helperText(app()->getLocale() === 'id' ? '1 unit mata uang terpilih = X Rupiah (Lock-Rate).' : '1 unit of selected currency = X Rupiah.')
                             ->afterStateUpdated(function (Get $get, Set $set) {
                                 static::recalculateAllItems($get, $set);
                             }),
 
                         Forms\Components\Select::make('status')
-                            ->label('Quotation Status')
+                            ->label(app()->getLocale() === 'id' ? 'Status Penawaran' : 'Quotation Status')
                             ->options([
                                 'Draft' => 'Draft',
                                 'Generated' => 'Generated',
@@ -98,15 +116,16 @@ class ProjectResource extends Resource
                             ->required(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Line Items / Features Scope')
-                    ->description('Add standardized catalog modules or define custom custom development features.')
+                Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Rincian Fitur & Lingkup Kerja' : 'Line Items / Features Scope')
+                    ->description(app()->getLocale() === 'id' ? 'Tambahkan fitur standar dari katalog atau masukkan fitur pengembangan kustom.' : 'Add standardized catalog modules or define custom development features.')
                     ->schema([
                         Forms\Components\Repeater::make('items')
+                            ->label(app()->getLocale() === 'id' ? 'Daftar Fitur' : 'Features List')
                             ->relationship('items')
                             ->schema([
                                 Forms\Components\Select::make('module_id')
-                                    ->label('Feature Catalog Template')
-                                    ->placeholder('-- Select Predefined Module (Optional) --')
+                                    ->label(app()->getLocale() === 'id' ? 'Pilih Template Katalog Modul' : 'Feature Catalog Template')
+                                    ->placeholder(app()->getLocale() === 'id' ? '-- Pilih Modul Standar (Opsional) --' : '-- Select Predefined Module (Optional) --')
                                     ->options(Module::query()->pluck('name', 'id'))
                                     ->searchable()
                                     ->nullable()
@@ -133,16 +152,16 @@ class ProjectResource extends Resource
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('item_name')
-                                    ->label('Feature / Task Name')
+                                    ->label(app()->getLocale() === 'id' ? 'Nama Fitur / Tugas' : 'Feature / Task Name')
                                     ->placeholder('e.g. Multi-vendor Payment Engine')
                                     ->required()
                                     ->maxLength(255)
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('base_price')
-                                    ->label('Base Price (IDR)')
+                                    ->label(app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)')
                                     ->required()
-                                    ->numeric()
+                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                     ->prefix('Rp')
                                     ->minValue(0)
                                     ->live(onBlur: true)
@@ -160,7 +179,7 @@ class ProjectResource extends Resource
                                     ->columnSpan(1),
 
                                 Forms\Components\TextInput::make('complexity_weight')
-                                    ->label('Complexity Weight')
+                                    ->label(app()->getLocale() === 'id' ? 'Bobot Kompleksitas' : 'Complexity Weight')
                                     ->required()
                                     ->numeric()
                                     ->default(1.00)
@@ -182,13 +201,13 @@ class ProjectResource extends Resource
                                     ->columnSpan(1),
 
                                 Forms\Components\TextInput::make('calculated_price')
-                                    ->label('Calculated Price')
+                                    ->label(app()->getLocale() === 'id' ? 'Harga Terhitung' : 'Calculated Price')
                                     ->required()
-                                    ->numeric()
+                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                     ->disabled()
                                     ->dehydrated()
                                     ->prefix(fn (Get $get) => $get('../../currency_code') ?: 'IDR')
-                                    ->helperText('Formula: (Base * Weight) / Exchange Rate')
+                                    ->helperText(app()->getLocale() === 'id' ? 'Rumus: (Harga Dasar * Bobot) / Kurs' : 'Formula: (Base * Weight) / Exchange Rate')
                                     ->columnSpan(2),
                             ])
                             ->columns(4)
@@ -196,11 +215,11 @@ class ProjectResource extends Resource
                             ->reorderable()
                             ->collapsible()
                             ->cloneable()
-                            ->itemLabel(fn (array $state): ?string => $state['item_name'] ?? 'New Item')
+                            ->itemLabel(fn (array $state): ?string => $state['item_name'] ?? (app()->getLocale() === 'id' ? 'Item Baru' : 'New Item'))
                             ->columnSpanFull(),
 
                         Forms\Components\Placeholder::make('grand_total_summary')
-                            ->label('Estimated Total Quotation')
+                            ->label(app()->getLocale() === 'id' ? 'Estimasi Total Penawaran' : 'Estimated Total Quotation')
                             ->content(function (Get $get) {
                                 $items = $get('items') ?? [];
                                 $currency = $get('currency_code') ?? 'IDR';
@@ -230,19 +249,19 @@ class ProjectResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('client_name')
-                    ->label('Client Name')
+                    ->label(app()->getLocale() === 'id' ? 'Nama Klien' : 'Client Name')
                     ->searchable()
                     ->sortable()
                     ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('user.name')
-                    ->label('Created By')
+                    ->label(app()->getLocale() === 'id' ? 'Dibuat Oleh' : 'Created By')
                     ->badge()
                     ->color('gray')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('currency_code')
-                    ->label('Currency')
+                    ->label(app()->getLocale() === 'id' ? 'Mata Uang' : 'Currency')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
                         'USD' => 'success',
@@ -272,17 +291,20 @@ class ProjectResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
+                    ->label(app()->getLocale() === 'id' ? 'Tanggal Dibuat' : 'Created Date')
                     ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
+                    ->label(app()->getLocale() === 'id' ? 'Filter Status' : 'Filter Status')
                     ->options([
                         'Draft' => 'Draft',
                         'Generated' => 'Generated',
                     ]),
                 Tables\Filters\SelectFilter::make('currency_code')
+                    ->label(app()->getLocale() === 'id' ? 'Filter Mata Uang' : 'Filter Currency')
                     ->options([
                         'IDR' => 'IDR',
                         'USD' => 'USD',
