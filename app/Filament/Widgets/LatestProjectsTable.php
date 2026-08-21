@@ -82,7 +82,7 @@ class LatestProjectsTable extends BaseWidget
             ])
             ->headerActions([
                 Tables\Actions\Action::make('create_project')
-                    ->label(app()->getLocale() === 'id' ? '+ Buat Penawaran Baru' : '+ Create New Quotation')
+                    ->label(app()->getLocale() === 'id' ? 'Buat Penawaran Baru' : 'Create New Quotation')
                     ->icon('heroicon-o-plus')
                     ->color('primary')
                     ->button()
