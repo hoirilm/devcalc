@@ -143,45 +143,20 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_language_switcher_switches_session_locale(): void
-    {
-        $response = $this->get(route('language.switch', 'id'));
-        $response->assertSessionHas('locale', 'id');
-
-        $response = $this->get(route('language.switch', 'en'));
-        $response->assertSessionHas('locale', 'en');
-    }
 
     public function test_help_page_can_be_rendered(): void
     {
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Pages\Help::class)
-            ->assertSuccessful();
+        $response = $this->actingAs($this->admin)->get('/help');
+        $response->assertSuccessful();
 
-        \Livewire\Livewire::actingAs($this->sales1)
-            ->test(\App\Filament\Pages\Help::class)
-            ->assertSuccessful();
+        $response = $this->actingAs($this->sales1)->get('/help');
+        $response->assertSuccessful();
     }
 
     public function test_all_dashboard_widgets_can_be_rendered(): void
     {
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Widgets\QuotationStatsOverview::class)
-            ->assertSuccessful();
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Widgets\QuotationStatusChart::class)
-            ->assertSuccessful();
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Widgets\QuickCalculatorWidget::class)
-            ->set('basePrice', '20.000.000')
-            ->set('complexity', 1.5)
-            ->assertSee(\Illuminate\Support\Number::currency(30000000, 'IDR', 'id'));
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Widgets\LatestProjectsTable::class)
-            ->assertSuccessful();
+        $response = $this->actingAs($this->admin)->get('/dashboard');
+        $response->assertSuccessful();
     }
 
     public function test_subscription_modular_and_dual_pricing_module(): void
@@ -342,7 +317,7 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $response->assertHeader('content-type', 'application/pdf');
     }
 
-    public function test_all_filament_resource_pages_can_be_rendered(): void
+    public function test_all_resource_pages_can_be_rendered(): void
     {
         $project = Project::create([
             'user_id' => $this->admin->id,
@@ -358,36 +333,10 @@ class QuotationCalculationAndPolicyTest extends TestCase
             'setup_fee' => 2000000.00,
         ]);
 
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Resources\ProjectResource\Pages\ListProjects::class)
-            ->assertSuccessful()
-            ->assertCanSeeTableRecords([$project])
-            ->assertTableActionExists('view_summary')
-            ->assertTableActionExists('print_pdf');
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Resources\ProjectResource\Pages\CreateProject::class)
-            ->assertSuccessful();
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Resources\ProjectResource\Pages\EditProject::class, [
-                'record' => $project->getRouteKey(),
-            ])
-            ->assertSuccessful();
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Resources\ModuleResource\Pages\CreateModule::class)
-            ->assertSuccessful();
-
-        \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Widgets\QuickCalculatorWidget::class)
-            ->assertSuccessful()
-            ->call('setMode', 'subscription')
-            ->assertSet('mode', 'subscription')
-            ->call('setMode', 'one_off')
-            ->assertSet('mode', 'one_off')
-            ->set('maintenanceMonths', 6)
-            ->assertSet('maintenanceMonths', 6);
+        $this->actingAs($this->admin)->get('/projects')->assertSuccessful();
+        $this->actingAs($this->admin)->get('/projects/create')->assertSuccessful();
+        $this->actingAs($this->admin)->get("/projects/{$project->id}/edit")->assertSuccessful();
+        $this->actingAs($this->admin)->get('/modules')->assertSuccessful();
     }
 
     public function test_maintenance_months_sla_guarantee_persistence(): void
@@ -405,6 +354,32 @@ class QuotationCalculationAndPolicyTest extends TestCase
 
         $response = $this->actingAs($this->sales1)->get(route('projects.pdf', $project));
         $response->assertStatus(200);
+    }
+
+    public function test_bulk_delete_projects(): void
+    {
+        $p1 = Project::create([
+            'user_id' => $this->admin->id,
+            'client_name' => 'PT Bulk 1',
+            'grand_total' => 1000000.00,
+            'status' => 'Draft',
+            'billing_type' => 'one_off',
+        ]);
+        $p2 = Project::create([
+            'user_id' => $this->admin->id,
+            'client_name' => 'PT Bulk 2',
+            'grand_total' => 2000000.00,
+            'status' => 'Draft',
+            'billing_type' => 'one_off',
+        ]);
+
+        $response = $this->actingAs($this->admin)->post(route('projects.bulk-delete'), [
+            'ids' => [$p1->id, $p2->id],
+        ]);
+
+        $response->assertSessionHas('success');
+        $this->assertDatabaseMissing('projects', ['id' => $p1->id]);
+        $this->assertDatabaseMissing('projects', ['id' => $p2->id]);
     }
 }
 

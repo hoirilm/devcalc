@@ -9,6 +9,7 @@
         "php": "^8.3",
         "barryvdh/laravel-dompdf": "*",
         "filament/filament": "^3.2",
+        "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0",
         "spatie/laravel-permission": "*"

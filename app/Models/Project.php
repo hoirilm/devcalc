@@ -27,6 +27,7 @@ class Project extends Model
         'price_per_user',
         'setup_fee',
         'maintenance_months',
+        'notes',
         'addendum_notes',
     ];
 

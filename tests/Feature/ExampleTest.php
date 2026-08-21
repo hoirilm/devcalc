@@ -1,13 +1,13 @@
 <?php
 
-test('the root application redirects to admin', function () {
+test('the root application redirects to dashboard', function () {
     $response = $this->get('/');
 
-    $response->assertRedirect('/admin');
+    $response->assertRedirect('/dashboard');
 });
 
-test('admin login page returns a successful response', function () {
-    $response = $this->get('/admin/login');
+test('login page returns a successful response', function () {
+    $response = $this->get('/login');
 
     $response->assertStatus(200);
 });

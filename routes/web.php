@@ -1,26 +1,32 @@
 <?php
 
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HelpController;
+use App\Http\Controllers\ModuleController;
+use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\QuotationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    return redirect('/admin');
+    return redirect()->route('dashboard');
 });
 
-Route::get('/login', function () {
-    return redirect('/admin/login');
-})->name('login');
+Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
-Route::get('/language/{locale}', function (Request $request, string $locale) {
-    if (in_array($locale, ['id', 'en'])) {
-        session(['locale' => $locale]);
-    }
-
-    return redirect()->back();
-})->name('language.switch');
 
 Route::middleware(['auth'])->group(function () {
-    Route::get('/projects/{project}/pdf', [QuotationController::class, 'downloadPdf'])
-        ->name('projects.pdf');
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::post('/projects/bulk-delete', [ProjectController::class, 'bulkDestroy'])->name('projects.bulk-delete');
+    Route::resource('projects', ProjectController::class);
+    Route::post('/projects/{project}/addendum', [ProjectController::class, 'createAddendum'])->name('projects.addendum');
+    Route::get('/projects/{project}/pdf', [QuotationController::class, 'downloadPdf'])->name('projects.pdf');
+
+    Route::resource('modules', ModuleController::class)->except(['create', 'show', 'edit']);
+
+    Route::get('/help', [HelpController::class, 'index'])->name('help');
 });
