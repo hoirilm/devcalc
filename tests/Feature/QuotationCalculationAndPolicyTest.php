@@ -57,8 +57,6 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $project1 = Project::create([
             'user_id' => $this->sales1->id,
             'client_name' => 'Client Sales 1',
-            'currency_code' => 'IDR',
-            'exchange_rate' => 1.00,
             'grand_total' => 5000000.00,
             'status' => 'Draft',
         ]);
@@ -79,15 +77,12 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $this->assertFalse($this->sales2->can('delete', $project1));
     }
 
-    public function test_calculation_formula_with_multi_currency_and_complexity(): void
+    public function test_calculation_formula_with_idr_and_complexity(): void
     {
-        // Example: Base price 16,000,000 IDR, Complexity 1.5x, Exchange Rate USD = 16,000 IDR
-        // Expected Calculated Price = (16,000,000 * 1.5) / 16,000 = 1,500.00 USD
+        // Example: Base price 16,000,000 IDR, Complexity 1.5x -> 24,000,000 IDR
         $project = Project::create([
             'user_id' => $this->sales1->id,
-            'client_name' => 'Global Tech Corp',
-            'currency_code' => 'USD',
-            'exchange_rate' => 16000.00,
+            'client_name' => 'PT Solusi Teknologi Nusantara',
             'grand_total' => 0.00,
             'status' => 'Draft',
         ]);
@@ -97,19 +92,19 @@ class QuotationCalculationAndPolicyTest extends TestCase
             'item_name' => 'Complex API Suite',
             'base_price' => 16000000.00,
             'complexity_weight' => 1.50,
-            'calculated_price' => round((16000000.00 * 1.50) / 16000.00, 2), // 1500.00
+            'calculated_price' => round(16000000.00 * 1.50, 2), // 24,000,000.00
         ]);
 
         $item2 = ProjectItem::create([
             'project_id' => $project->id,
             'item_name' => 'OAuth Login',
             'base_price' => 3200000.00,
-            'complexity_weight' => 1.00,
-            'calculated_price' => round((3200000.00 * 1.00) / 16000.00, 2), // 200.00
+            'complexity_weight' => 1.25,
+            'calculated_price' => round(3200000.00 * 1.25, 2), // 4,000,000.00
         ]);
 
         $project->recalculateGrandTotal();
-        $this->assertEquals(1700.00, (float) $project->fresh()->grand_total);
+        $this->assertEquals(28000000.00, (float) $project->fresh()->grand_total);
     }
 
     public function test_pdf_generation_route_authorization_and_rendering(): void
@@ -117,8 +112,6 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $project = Project::create([
             'user_id' => $this->sales1->id,
             'client_name' => 'PT Mega Solusi',
-            'currency_code' => 'IDR',
-            'exchange_rate' => 1.00,
             'grand_total' => 10000000.00,
             'status' => 'Draft',
         ]);
@@ -169,5 +162,224 @@ class QuotationCalculationAndPolicyTest extends TestCase
             ->test(\App\Filament\Pages\Help::class)
             ->assertSuccessful();
     }
+
+    public function test_all_dashboard_widgets_can_be_rendered(): void
+    {
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Widgets\QuotationStatsOverview::class)
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Widgets\QuotationStatusChart::class)
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Widgets\QuickCalculatorWidget::class)
+            ->set('basePrice', '20.000.000')
+            ->set('complexity', 1.5)
+            ->assertSee(\Illuminate\Support\Number::currency(30000000, 'IDR', 'id'));
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Widgets\LatestProjectsTable::class)
+            ->assertSuccessful();
+    }
+
+    public function test_subscription_modular_and_dual_pricing_module(): void
+    {
+        $module = Module::create([
+            'name' => 'Fintech Settlement Hub',
+            'category' => 'Fintech',
+            'base_price' => 15000000.00,
+            'subscription_price' => 1200000.00,
+        ]);
+
+        $this->assertEquals(15000000.00, (float) $module->base_price);
+        $this->assertEquals(1200000.00, (float) $module->subscription_price);
+
+        // Monthly modular subscription: Setup Fee 5,000,000 + (1,500,000 / month * 12 months) = 23,000,000
+        $project = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT SaaS Modular',
+            'grand_total' => 0.00,
+            'status' => 'Draft',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'modular',
+            'billing_cycle' => 'monthly',
+            'subscription_duration' => 12,
+            'setup_fee' => 5000000.00,
+        ]);
+
+        ProjectItem::create([
+            'project_id' => $project->id,
+            'module_id' => $module->id,
+            'item_name' => 'Fintech Settlement Hub',
+            'base_price' => 1200000.00,
+            'complexity_weight' => 1.25,
+            'calculated_price' => 1500000.00,
+        ]);
+
+        $project->recalculateGrandTotal();
+        $this->assertEquals(23000000.00, (float) $project->fresh()->grand_total);
+        $this->assertTrue($project->isSubscription());
+
+        // Test PDF generation for modular project
+        $response = $this->actingAs($this->sales1)->get(route('projects.pdf', $project));
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_subscription_per_user_calculation(): void
+    {
+        // 100 users @ 50,000 / month = 5,000,000 / month * 12 months + 2,000,000 setup = 62,000,000
+        $project = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT Per User Client',
+            'grand_total' => 0.00,
+            'status' => 'Draft',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'per_user',
+            'billing_cycle' => 'monthly',
+            'subscription_duration' => 12,
+            'user_count' => 100,
+            'price_per_user' => 50000.00,
+            'setup_fee' => 2000000.00,
+        ]);
+
+        $project->recalculateGrandTotal();
+        $this->assertEquals(62000000.00, (float) $project->fresh()->grand_total);
+        $this->assertEquals(5000000.00, $project->getRecurringPerCycle());
+
+        $response = $this->actingAs($this->sales1)->get(route('projects.pdf', $project));
+        $response->assertStatus(200);
+    }
+
+    public function test_subscription_hybrid_calculation(): void
+    {
+        // Items: 2,000,000 / month + Users: (50 users @ 40,000 = 2,000,000 / month) = 4,000,000 / month * 6 months + 3,000,000 setup = 27,000,000
+        $project = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT Hybrid Enterprise',
+            'grand_total' => 0.00,
+            'status' => 'Draft',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'hybrid',
+            'billing_cycle' => 'monthly',
+            'subscription_duration' => 6,
+            'user_count' => 50,
+            'price_per_user' => 40000.00,
+            'setup_fee' => 3000000.00,
+        ]);
+
+        ProjectItem::create([
+            'project_id' => $project->id,
+            'item_name' => 'Platform Infrastructure Base',
+            'base_price' => 2000000.00,
+            'complexity_weight' => 1.00,
+            'calculated_price' => 2000000.00,
+        ]);
+
+        $project->recalculateGrandTotal();
+        $this->assertEquals(27000000.00, (float) $project->fresh()->grand_total);
+        $this->assertEquals(4000000.00, $project->getRecurringPerCycle());
+
+        $response = $this->actingAs($this->sales1)->get(route('projects.pdf', $project));
+        $response->assertStatus(200);
+    }
+
+    public function test_addendum_creation_relationship_and_pdf_rendering(): void
+    {
+        // 1. Parent project
+        $parent = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT Sarana Pactindo',
+            'grand_total' => 45850000.00,
+            'status' => 'Generated',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'hybrid',
+            'billing_cycle' => 'monthly',
+            'subscription_duration' => 12,
+            'user_count' => 50,
+            'price_per_user' => 50000.00,
+            'setup_fee' => 250000.00,
+        ]);
+
+        $this->assertEquals('QUO-' . str_pad($parent->id, 5, '0', STR_PAD_LEFT), $parent->getQuotationCode());
+        $this->assertFalse($parent->isAddendum());
+
+        // 2. Create Addendum: +50 users (total 100) for remaining 6 months
+        $addendum = Project::create([
+            'parent_id' => $parent->id,
+            'quotation_type' => 'addendum',
+            'addendum_number' => $parent->getNextAddendumNumber(),
+            'user_id' => $this->sales1->id,
+            'client_name' => $parent->client_name,
+            'grand_total' => 0.00,
+            'status' => 'Draft',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'per_user',
+            'billing_cycle' => 'monthly',
+            'subscription_duration' => 6,
+            'user_count' => 50, // 50 additional users
+            'price_per_user' => 50000.00,
+            'setup_fee' => 0.00,
+            'addendum_notes' => 'Penyesuaian kuota kapasitas pengguna aktif (+50 user) untuk sisa 6 bulan masa kontrak berjalan.',
+        ]);
+
+        $addendum->recalculateGrandTotal();
+
+        $this->assertTrue($addendum->isAddendum());
+        $this->assertEquals(1, $addendum->addendum_number);
+        $this->assertEquals('QUO-' . str_pad($parent->id, 5, '0', STR_PAD_LEFT) . '-ADD-01', $addendum->getQuotationCode());
+        $this->assertEquals($parent->id, $addendum->parent->id);
+        $this->assertEquals(1, $parent->addendums()->count());
+
+        // Value: 50 users * 50,000 * 6 months = 15,000,000
+        $this->assertEquals(15000000.00, (float) $addendum->grand_total);
+
+        // Test PDF generation for addendum
+        $response = $this->actingAs($this->sales1)->get(route('projects.pdf', $addendum));
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'application/pdf');
+    }
+
+    public function test_all_filament_resource_pages_can_be_rendered(): void
+    {
+        $project = Project::create([
+            'user_id' => $this->admin->id,
+            'client_name' => 'PT Test Corp',
+            'grand_total' => 10000000.00,
+            'status' => 'Draft',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'hybrid',
+            'billing_cycle' => 'monthly',
+            'subscription_duration' => 12,
+            'user_count' => 50,
+            'price_per_user' => 20000.00,
+            'setup_fee' => 2000000.00,
+        ]);
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Resources\ProjectResource\Pages\ListProjects::class)
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Resources\ProjectResource\Pages\CreateProject::class)
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Resources\ProjectResource\Pages\EditProject::class, [
+                'record' => $project->getRouteKey(),
+            ])
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Resources\ModuleResource\Pages\ListModules::class)
+            ->assertSuccessful();
+
+        \Livewire\Livewire::actingAs($this->admin)
+            ->test(\App\Filament\Resources\ModuleResource\Pages\CreateModule::class)
+            ->assertSuccessful();
+    }
 }
+
 

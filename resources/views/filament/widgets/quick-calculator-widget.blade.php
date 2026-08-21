@@ -4,16 +4,16 @@
             {{ app()->getLocale() === 'id' ? 'Kalkulator Cepat (Live Simulator)' : 'Quick Calculator (Live Simulator)' }}
         </x-slot>
         <x-slot name="description">
-            {{ app()->getLocale() === 'id' ? 'Simulasi harga fitur instan dengan kurs & bobot kompleksitas.' : 'Instant feature price simulation with exchange rate & complexity.' }}
+            {{ app()->getLocale() === 'id' ? 'Simulasi harga fitur instan dengan bobot kompleksitas.' : 'Instant feature price simulation with complexity multiplier.' }}
         </x-slot>
 
         <div style="display: flex; flex-direction: column; gap: 14px;">
             <!-- Inputs Grid -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <!-- Base Price -->
                 <div>
                     <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;" class="dark:text-gray-400">
-                        {{ app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)' }}
+                        {{ app()->getLocale() === 'id' ? 'Harga Dasar (Rp)' : 'Base Price (Rp)' }}
                     </label>
                     <div style="position: relative; display: flex; align-items: center;">
                         <span style="position: absolute; left: 10px; font-size: 12px; font-weight: 700; color: #64748b;" class="dark:text-gray-400">Rp</span>
@@ -25,23 +25,6 @@
                             placeholder="10.000.000"
                         />
                     </div>
-                </div>
-
-                <!-- Currency -->
-                <div>
-                    <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;" class="dark:text-gray-400">
-                        {{ app()->getLocale() === 'id' ? 'Mata Uang Target' : 'Target Currency' }}
-                    </label>
-                    <select 
-                        wire:model.live="currency"
-                        style="width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; padding: 7px 10px; font-size: 13px; font-weight: 600;"
-                        class="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                    >
-                        <option value="IDR">IDR (Rupiah)</option>
-                        <option value="USD">USD (Dollar)</option>
-                        <option value="EUR">EUR (Euro)</option>
-                        <option value="SGD">SGD (Singapore)</option>
-                    </select>
                 </div>
 
                 <!-- Complexity -->
@@ -61,23 +44,6 @@
                         <option value="2.00">2.00x (Advanced)</option>
                     </select>
                 </div>
-
-                <!-- Exchange Rate -->
-                <div>
-                    <label style="display: block; font-size: 11px; font-weight: 600; color: #64748b; margin-bottom: 4px;" class="dark:text-gray-400">
-                        {{ app()->getLocale() === 'id' ? 'Kurs Tukar (IDR)' : 'Exchange Rate' }}
-                    </label>
-                    <div style="position: relative; display: flex; align-items: center;">
-                        <span style="position: absolute; left: 10px; font-size: 12px; font-weight: 700; color: #64748b;" class="dark:text-gray-400">Rp</span>
-                        <input 
-                            type="text" 
-                            wire:model.live.debounce.300ms="exchangeRate" 
-                            style="width: 100%; border-radius: 8px; border: 1px solid #cbd5e1; padding: 7px 10px 7px 32px; font-size: 13px; font-weight: 700;"
-                            class="dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                            placeholder="16.000"
-                        />
-                    </div>
-                </div>
             </div>
 
             <!-- Result Box -->
@@ -87,11 +53,11 @@
                         {{ app()->getLocale() === 'id' ? 'Estimasi Harga Terhitung' : 'Calculated Price' }}
                     </div>
                     <div style="font-size: 11px; color: #64748b;" class="dark:text-gray-400">
-                        (Rp {{ $basePrice }} &times; {{ $complexity }}x) &divide; Rp {{ $exchangeRate }}
+                        Rp {{ $basePrice }} &times; {{ $complexity }}x
                     </div>
                 </div>
                 <div style="font-size: 19px; font-weight: 800; color: #2563eb;" class="dark:text-blue-400">
-                    {{ \Illuminate\Support\Number::currency($this->calculatedTotal, $currency, $currency === 'IDR' ? 'id' : 'en') }}
+                    {{ \Illuminate\Support\Number::currency($this->calculatedTotal, 'IDR', 'id') }}
                 </div>
             </div>
 

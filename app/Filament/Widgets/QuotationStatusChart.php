@@ -17,8 +17,8 @@ class QuotationStatusChart extends ChartWidget
     public function getHeading(): string
     {
         return app()->getLocale() === 'id'
-            ? 'Distribusi Mata Uang Penawaran'
-            : 'Quotations by Currency Distribution';
+            ? 'Distribusi Status Penawaran'
+            : 'Quotations by Status Distribution';
     }
 
     protected function getData(): array
@@ -31,28 +31,26 @@ class QuotationStatusChart extends ChartWidget
             $query->where('user_id', $user->id);
         }
 
-        $idrCount = (clone $query)->where('currency_code', 'IDR')->count();
-        $usdCount = (clone $query)->where('currency_code', 'USD')->count();
-        $eurCount = (clone $query)->where('currency_code', 'EUR')->count();
-        $sgdCount = (clone $query)->where('currency_code', 'SGD')->count();
+        $draftCount = (clone $query)->where('status', 'Draft')->count();
+        $generatedCount = (clone $query)->where('status', 'Generated')->count();
 
-        // If all 0, provide sample baseline
-        $counts = [$idrCount, $usdCount, $eurCount, $sgdCount];
+        $counts = [$draftCount, $generatedCount];
 
         return [
             'datasets' => [
                 [
-                    'label' => app()->getLocale() === 'id' ? 'Jumlah Proyek' : 'Project Count',
+                    'label' => app()->getLocale() === 'id' ? 'Jumlah Dokumen' : 'Document Count',
                     'data' => $counts,
                     'backgroundColor' => [
-                        '#3b82f6', // Blue for IDR
-                        '#10b981', // Green for USD
-                        '#f59e0b', // Amber for EUR
-                        '#6366f1', // Indigo for SGD
+                        '#f59e0b', // Amber for Draft
+                        '#10b981', // Emerald for Generated
                     ],
                 ],
             ],
-            'labels' => ['IDR (Rupiah)', 'USD (Dollar)', 'EUR (Euro)', 'SGD (Singapore)'],
+            'labels' => [
+                app()->getLocale() === 'id' ? 'Draft (Proses)' : 'Draft (In Progress)',
+                app()->getLocale() === 'id' ? 'Generated (Siap Cetak)' : 'Generated (Ready)',
+            ],
         ];
     }
 

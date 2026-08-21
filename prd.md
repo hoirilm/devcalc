@@ -4,7 +4,7 @@
 **Platform:** Web Application  
 
 ## 1. Project Overview & Architecture
-Sistem manajemen penawaran (quotation) internal berbasis web. Sistem ini menggunakan kalkulasi dinamis berdasarkan bobot kompleksitas fitur, mendukung multi-mata uang (*cross-currency*) dengan sistem *lock-rate*, dan menghasilkan nota berformat PDF.
+Sistem manajemen penawaran (quotation) internal berbasis web. Sistem ini menggunakan kalkulasi dinamis berdasarkan bobot kompleksitas fitur (Complexity Weight) dalam mata uang Rupiah (IDR) dan menghasilkan nota berformat PDF resmi.
 
 ### Tech Stack Khusus
 *   **Framework:** Laravel 13
@@ -27,7 +27,7 @@ Karena menggunakan SQLite, penanganan tipe data `DECIMAL` pada tingkat *database
 | :--- | :--- | :--- | :--- |
 | `id` | ID | Primary Key | - |
 | `name` | String | Required | Nama fitur standar |
-| `base_price` | Decimal | Total: 15, Places: 2 | Harga dasar |
+| `base_price` | Decimal | Total: 15, Places: 2 | Harga dasar (IDR) |
 | `category` | String | Nullable | Pengelompokan fitur |
 | `timestamps` | - | - | Created_at, Updated_at |
 
@@ -39,14 +39,19 @@ Karena menggunakan SQLite, penanganan tipe data `DECIMAL` pada tingkat *database
 | `id` | ID | Primary Key | - |
 | `user_id` | Foreign ID | Constrained, Cascade | Pembuat dokumen |
 | `client_name` | String | Required | Nama Klien |
-| `currency_code` | String | Length: 3, Default: IDR| Kode mata uang (IDR, USD) |
-| `exchange_rate` | Decimal | Total: 15, Places: 2 | Kurs saat dokumen dibuat |
-| `grand_total` | Decimal | Total: 15, Places: 2 | Total keseluruhan nota |
+| `grand_total` | Decimal | Total: 15, Places: 2 | Total nilai kontrak nota (Rp) |
 | `status` | String | Default: 'Draft' | Enum: Draft, Generated |
+| `billing_type` | String | Default: 'one_off' | Enum: one_off (Putus Kontrak), subscription (Berlangganan) |
+| `billing_cycle`| String | Default: 'monthly' | Enum: monthly (Bulanan), yearly (Tahunan) |
+| `subscription_duration` | Integer | Default: 12 | Durasi komitmen kontrak (Bulan/Tahun) |
+| `setup_fee` | Decimal | Total: 15, Places: 2 | Biaya setup / onboarding awal (Rp) |
 | `timestamps` | - | - | Created_at, Updated_at |
 
-*   **Eloquent Casts:** `'exchange_rate' => 'decimal:2'`, `'grand_total' => 'decimal:2'`
+*   **Eloquent Casts:** `'grand_total' => 'decimal:2'`, `'setup_fee' => 'decimal:2'`, `'subscription_duration' => 'integer'`
 *   **Relationships:** `hasMany(ProjectItem::class)`, `belongsTo(User::class)`
+*   **Kalkulasi Total:**
+    *   *Putus Kontrak:* `grand_total = sum(items.calculated_price)`
+    *   *Berlangganan:* `grand_total = setup_fee + (sum(items.calculated_price) * subscription_duration)`
 
 ### D. Tabel `project_items` (Keranjang Fitur / Line Items)
 | Column | Type | Modifiers | Description |
@@ -55,9 +60,9 @@ Karena menggunakan SQLite, penanganan tipe data `DECIMAL` pada tingkat *database
 | `project_id` | Foreign ID | Constrained, Cascade | Relasi ke tabel projects |
 | `module_id` | Foreign ID | Nullable, Set Null | Null jika fitur custom |
 | `item_name` | String | Required | Nama fitur (di nota) |
-| `base_price` | Decimal | Total: 15, Places: 2 | Harga sebelum bobot & kurs |
+| `base_price` | Decimal | Total: 15, Places: 2 | Harga dasar (IDR) |
 | `complexity_weight`| Decimal | Total: 8, Places: 2 | Default 1.00 |
-| `calculated_price` | Decimal | Total: 15, Places: 2 | Final price per item |
+| `calculated_price` | Decimal | Total: 15, Places: 2 | Final price per item (IDR) |
 | `timestamps` | - | - | Created_at, Updated_at |
 
 *   **Eloquent Casts:** `'base_price' => 'decimal:2'`, `'complexity_weight' => 'decimal:2'`, `'calculated_price' => 'decimal:2'`
@@ -81,23 +86,35 @@ Implementasikan Laravel Policies untuk setiap Model dan integrasikan dengan Spat
 
 ### A. ModuleResource (Master Data)
 *   **Akses:** Hanya Admin. Navigasi disembunyikan untuk Sales.
-*   **Tabel:** Kolom pencarian pada `name` dan `category`. Format uang pada `base_price`.
-*   **Form:** Input teks standar dan `TextInput::make('base_price')->numeric()`.
+*   **Dual Pricing:**
+    *   `base_price`: Harga beli putus / *one-off build price* (Rp).
+    *   `subscription_price`: Harga sewa & pemeliharaan modul per bulan / *subscription base price* (Rp).
+*   **Tabel & Form:** Input teks standar dan `TextInput` dengan masking mata uang interaktif `$money($input, ',', '.', 0)`.
 
 ### B. ProjectResource (Transaction & Logic)
 *   **Data Ownership (Query Builder):** 
     Terapkan modifikasi pada `getEloquentQuery()` untuk memfilter `user_id` jika user bukan Admin.
 *   **Header Form (Project Details):**
-    *   `Select` untuk `currency_code` (live reaktif).
-    *   `TextInput` untuk `exchange_rate` (nilai *default* menyesuaikan mata uang yang dipilih, bisa diedit manual).
+    *   `TextInput` untuk `client_name`.
+    *   `Select` untuk `status`.
+    *   `Select` untuk `billing_type` (`one_off` vs `subscription`).
+    *   `Select` untuk `subscription_basis` (`modular`, `per_user`, `hybrid`).
+    *   `Select` untuk `billing_cycle` (`monthly` vs `yearly`).
+    *   `TextInput` untuk `subscription_duration`, `user_count`, `price_per_user`, dan `setup_fee`.
 *   **Repeater Form (Line Items Logic):**
     Gunakan `Repeater::make('items')->relationship()`.
-    *   **Standar vs Custom:** Buat *dropdown* `module_id`. Jika dipilih (standar), gunakan `afterStateUpdated` untuk menyalin `name` ke `item_name` dan `base_price` ke `base_price`. Jika tidak dipilih (NULL), user mengisi manual (custom).
-    *   **Kalkulasi Real-time:** Ketika `base_price`, `complexity_weight`, atau `exchange_rate` (dari form induk) berubah, hitung ulang secara otomatis: 
-        `calculated_price = (base_price * complexity_weight) / exchange_rate`.
-    *   Gunakan `live(onBlur: true)` pada input angka untuk optimalisasi performa UX.
-*   **Footer Form:**
-    *   `Placeholder` (Read-only) untuk menampilkan komputasi sementara dari `grand_total` sebelum disimpan.
+    *   **Standar vs Custom:** Dropdown `module_id`. Jika penawaran adalah *Putus Kontrak*, mengambil `base_price`. Jika *Berlangganan*, otomatis mengambil `subscription_price` (atau rasio 8% jika kosong).
+    *   **Kalkulasi Real-time:** Ketika `base_price` atau `complexity_weight` berubah, hitung ulang: 
+        `calculated_price = base_price * complexity_weight`.
+*   **Formula Kalkulasi Kontrak:**
+    *   **Putus Kontrak (One-Off):**
+        $$\text{Grand Total} = \sum \text{Calculated Price}$$
+    *   **Berlangganan - Flat Modular:**
+        $$\text{Grand Total} = \text{Setup Fee} + \left( \sum \text{Calculated Price} \times \text{Duration} \right)$$
+    *   **Berlangganan - Per-User:**
+        $$\text{Grand Total} = \text{Setup Fee} + \left( (\text{User Count} \times \text{Price per User}) \times \text{Duration} \right)$$
+    *   **Berlangganan - Hybrid:**
+        $$\text{Grand Total} = \text{Setup Fee} + \left( \left(\sum \text{Calculated Price} + (\text{User Count} \times \text{Price per User})\right) \times \text{Duration} \right)$$
 
 ### C. PDF Export Action
 *   Tambahkan Custom Action di halaman `ListRecords` (kolom tabel) dan `ViewRecord`/`EditRecord` (header).
@@ -111,5 +128,5 @@ Implementasikan Laravel Policies untuk setiap Model dan integrasikan dengan Spat
 *   **View (Blade):**
     *   Gunakan struktur tabel HTML tradisional (`<table>`, `<tr>`, `<td>`).
     *   Sematkan *Internal CSS* (`<style>`).
-    *   Gunakan `Illuminate\Support\Number::currency()` bawan Laravel 10+ (didukung penuh di Laravel 13) untuk *formatting* mata uang berdasarkan `currency_code` milik proyek.
+    *   Gunakan `Illuminate\Support\Number::currency()` bawaan Laravel 10+ (didukung penuh di Laravel 13) untuk *formatting* mata uang Rupiah (IDR).
     *   Hitung `grand_total` secara dinamis di *controller* dengan melakukan *sum* pada kolom `calculated_price` dari relasi `items`, lalu simpan hasilnya kembali ke database jika perlu (atau tampilkan langsung).

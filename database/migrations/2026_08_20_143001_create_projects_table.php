@@ -15,8 +15,6 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
             $table->string('client_name');
-            $table->string('currency_code', 3)->default('IDR');
-            $table->decimal('exchange_rate', 15, 2)->default(1.00);
             $table->decimal('grand_total', 15, 2)->default(0.00);
             $table->string('status')->default('Draft');
             $table->timestamps();

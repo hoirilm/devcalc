@@ -65,15 +65,26 @@ class ModuleResource extends Resource
                         Forms\Components\TextInput::make('category')
                             ->label(app()->getLocale() === 'id' ? 'Kategori / Domain' : 'Category / Domain')
                             ->placeholder('e.g. Core Security, Backend & API, Fintech')
-                            ->maxLength(255),
+                            ->maxLength(255)
+                            ->columnSpanFull(),
 
                         Forms\Components\TextInput::make('base_price')
-                            ->label(app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)')
+                            ->label(app()->getLocale() === 'id' ? 'Harga Beli Putus (One-Off)' : 'One-Off Base Price')
                             ->required()
-                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                             ->prefix('Rp')
-                            ->minValue(0)
-                            ->helperText(app()->getLocale() === 'id' ? 'Harga acuan standar sebelum dikalikan bobot kompleksitas.' : 'Standard base price before complexity multiplier and currency exchange.'),
+                            ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->stripCharacters('.')
+                            ->formatStateUsing(fn ($state) => $state !== null ? (int) $state : 0)
+                            ->helperText(app()->getLocale() === 'id' ? 'Harga dasar lisensi beli putus.' : 'Standard base price for one-off build.'),
+
+                        Forms\Components\TextInput::make('subscription_price')
+                            ->label(app()->getLocale() === 'id' ? 'Harga Langganan / Bulan' : 'Subscription Price / Month')
+                            ->prefix('Rp')
+                            ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->stripCharacters('.')
+                            ->formatStateUsing(fn ($state) => $state !== null ? (int) $state : 0)
+                            ->default(0)
+                            ->helperText(app()->getLocale() === 'id' ? 'Tarif sewa & pemeliharaan modul per bulan.' : 'Monthly maintenance & subscription fee.'),
                     ])->columns(2),
             ]);
     }
@@ -96,7 +107,12 @@ class ModuleResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('base_price')
-                    ->label(app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)')
+                    ->label(app()->getLocale() === 'id' ? 'Beli Putus' : 'One-Off')
+                    ->money('IDR', locale: 'id')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('subscription_price')
+                    ->label(app()->getLocale() === 'id' ? 'Langganan / Bln' : 'Sub / Month')
                     ->money('IDR', locale: 'id')
                     ->sortable(),
 

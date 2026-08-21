@@ -27,15 +27,8 @@ class QuotationStatsOverview extends BaseWidget
         $generatedProjects = (clone $query)->where('status', 'Generated')->count();
         $draftProjects = (clone $query)->where('status', 'Draft')->count();
 
-        // Calculate total valuation in IDR equivalent: grand_total * exchange_rate
-        $totalValuationIdr = (clone $query)->get()->sum(function ($project) {
-            $rate = (float) $project->exchange_rate ?: 1.0;
-            // If currency is IDR, grand_total is already in IDR. If foreign currency, grand_total * exchange_rate
-            if ($project->currency_code === 'IDR') {
-                return (float) $project->grand_total;
-            }
-            return (float) $project->grand_total * $rate;
-        });
+        // Calculate total valuation in IDR
+        $totalValuationIdr = (float) (clone $query)->sum('grand_total');
 
         $totalModules = Module::count();
 
@@ -59,10 +52,10 @@ class QuotationStatsOverview extends BaseWidget
                 ->chart([1, 2, 4, 3, 7, max($generatedProjects, 1)]),
 
             Stat::make(
-                label: $isIndo ? 'Akumulasi Nilai Estimasi' : 'Total Valuation (IDR)',
+                label: $isIndo ? 'Akumulasi Nilai Estimasi (Rp)' : 'Total Valuation (Rp)',
                 value: Number::currency($totalValuationIdr, 'IDR', 'id')
             )
-                ->description($isIndo ? 'Estimasi nilai setara IDR' : 'Estimated portfolio value')
+                ->description($isIndo ? 'Estimasi nilai portofolio' : 'Estimated portfolio value')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('warning')
                 ->chart([10, 25, 45, 60, 80, 100]),

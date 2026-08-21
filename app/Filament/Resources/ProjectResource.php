@@ -59,8 +59,31 @@ class ProjectResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Informasi Dokumen & Adendum' : 'Document & Addendum Information')
+                    ->visible(fn (?Project $record) => $record && $record->isAddendum())
+                    ->schema([
+                        Forms\Components\Placeholder::make('parent_info')
+                            ->label('Status Adendum')
+                            ->content(function (?Project $record) {
+                                if (!$record || !$record->isAddendum()) return null;
+                                $parentCode = $record->parent ? $record->parent->getQuotationCode() : "QUO-" . str_pad($record->parent_id, 5, '0', STR_PAD_LEFT);
+                                return new \Illuminate\Support\HtmlString(
+                                    "<div style='padding: 10px 14px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 8px; color: #92400e; font-size: 13px;'>" .
+                                    "<strong>Dokumen Adendum Resmi:</strong> Penawaran ini merupakan adendum nomor <strong>#{$record->getQuotationCode()}</strong> yang mengacu pada Kontrak Induk <strong>#{$parentCode}</strong>." .
+                                    "</div>"
+                                );
+                            })
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('addendum_notes')
+                            ->label('Catatan / Ruang Lingkup Perubahan Adendum')
+                            ->placeholder('Jelaskan ruang lingkup perubahan atau penyesuaian kapasitas pada adendum ini.')
+                            ->rows(2)
+                            ->columnSpanFull(),
+                    ]),
+
                 Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Informasi Proyek & Klien' : 'Project & Client Overview')
-                    ->description(app()->getLocale() === 'id' ? 'Tentukan data penawaran, target mata uang, dan nilai kurs tukar (lock-rate).' : 'Specify project quotation metadata, target currency, and locked exchange rate.')
+                    ->description(app()->getLocale() === 'id' ? 'Tentukan data penawaran, klien, dan skema kontrak.' : 'Specify project quotation metadata, client, and billing scheme.')
                     ->schema([
                         Forms\Components\TextInput::make('client_name')
                             ->label(app()->getLocale() === 'id' ? 'Nama Klien / Perusahaan' : 'Client Name / Organization')
@@ -69,43 +92,6 @@ class ProjectResource extends Resource
                             ->maxLength(255)
                             ->columnSpan(2),
 
-                        Forms\Components\Select::make('currency_code')
-                            ->label(app()->getLocale() === 'id' ? 'Mata Uang' : 'Currency')
-                            ->options([
-                                'IDR' => 'IDR - Indonesian Rupiah',
-                                'USD' => 'USD - US Dollar',
-                                'EUR' => 'EUR - Euro',
-                                'SGD' => 'SGD - Singapore Dollar',
-                            ])
-                            ->default('IDR')
-                            ->required()
-                            ->live()
-                            ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                                // Provide sensible default exchange rate if switching currency
-                                match ($state) {
-                                    'USD' => $set('exchange_rate', 16000.00),
-                                    'EUR' => $set('exchange_rate', 17500.00),
-                                    'SGD' => $set('exchange_rate', 12000.00),
-                                    default => $set('exchange_rate', 1.00),
-                                };
-
-                                // Recalculate all items based on new exchange rate
-                                static::recalculateAllItems($get, $set);
-                            }),
-
-                        Forms\Components\TextInput::make('exchange_rate')
-                            ->label(app()->getLocale() === 'id' ? 'Nilai Kurs (dalam IDR)' : 'Exchange Rate (in IDR)')
-                            ->required()
-                            ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
-                            ->default(1.00)
-                            ->minValue(0.01)
-                            ->live(onBlur: true)
-                            ->prefix('Rp')
-                            ->helperText(app()->getLocale() === 'id' ? '1 unit mata uang terpilih = X Rupiah (Lock-Rate).' : '1 unit of selected currency = X Rupiah.')
-                            ->afterStateUpdated(function (Get $get, Set $set) {
-                                static::recalculateAllItems($get, $set);
-                            }),
-
                         Forms\Components\Select::make('status')
                             ->label(app()->getLocale() === 'id' ? 'Status Penawaran' : 'Quotation Status')
                             ->options([
@@ -113,11 +99,98 @@ class ProjectResource extends Resource
                                 'Generated' => 'Generated',
                             ])
                             ->default('Draft')
-                            ->required(),
+                            ->required()
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('billing_type')
+                            ->label(app()->getLocale() === 'id' ? 'Skema Kontrak' : 'Contract Scheme')
+                            ->options([
+                                'one_off' => app()->getLocale() === 'id' ? 'Putus Kontrak (One-Off)' : 'One-Off (Fixed Contract)',
+                                'subscription' => app()->getLocale() === 'id' ? 'Berlangganan / SaaS (Subscription)' : 'Subscription (SaaS/Retainer)',
+                            ])
+                            ->default('one_off')
+                            ->required()
+                            ->live()
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('subscription_basis')
+                            ->label(app()->getLocale() === 'id' ? 'Metode Tagihan Langganan' : 'Subscription Pricing Basis')
+                            ->options([
+                                'modular' => app()->getLocale() === 'id' ? 'Flat Modular (Sewa Modul)' : 'Modular (Per-Module)',
+                                'per_user' => app()->getLocale() === 'id' ? 'Per-User (Kapasitas Pengguna)' : 'User-Based (Per-Seat)',
+                                'hybrid' => app()->getLocale() === 'id' ? 'Hybrid (Modul + Kuota Pengguna)' : 'Hybrid (Module + Per-User)',
+                            ])
+                            ->default('modular')
+                            ->required(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->visible(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->live()
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('billing_cycle')
+                            ->label(app()->getLocale() === 'id' ? 'Siklus Penagihan' : 'Billing Cycle')
+                            ->options([
+                                'monthly' => app()->getLocale() === 'id' ? 'Bulanan (Monthly)' : 'Monthly',
+                                'yearly' => app()->getLocale() === 'id' ? 'Tahunan (Yearly)' : 'Yearly',
+                            ])
+                            ->default('monthly')
+                            ->required(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->visible(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->live()
+                            ->columnSpan(1),
+
+                        Forms\Components\TextInput::make('subscription_duration')
+                            ->label(app()->getLocale() === 'id' ? 'Durasi Komitmen Kontrak' : 'Commitment Duration')
+                            ->required(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->visible(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->numeric()
+                            ->default(12)
+                            ->minValue(1)
+                            ->suffix(fn (Get $get) => $get('billing_cycle') === 'yearly' ? (app()->getLocale() === 'id' ? 'Tahun' : 'Years') : (app()->getLocale() === 'id' ? 'Bulan' : 'Months'))
+                            ->live(onBlur: true)
+                            ->columnSpan(1),
+
+                        Forms\Components\TextInput::make('user_count')
+                            ->label(app()->getLocale() === 'id' ? 'Jumlah Pengguna Aktif (User)' : 'Estimated Active Users')
+                            ->visible(fn (Get $get) => $get('billing_type') === 'subscription' && in_array($get('subscription_basis'), ['per_user', 'hybrid']))
+                            ->numeric()
+                            ->default(50)
+                            ->minValue(1)
+                            ->suffix(app()->getLocale() === 'id' ? 'User' : 'Seats')
+                            ->live(onBlur: true)
+                            ->columnSpan(1),
+
+                        Forms\Components\TextInput::make('price_per_user')
+                            ->label(app()->getLocale() === 'id' ? 'Tarif per User / Bulan' : 'Price per User / Month')
+                            ->visible(fn (Get $get) => $get('billing_type') === 'subscription' && in_array($get('subscription_basis'), ['per_user', 'hybrid']))
+                            ->prefix('Rp')
+                            ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->stripCharacters('.')
+                            ->formatStateUsing(fn ($state) => $state !== null ? (int) $state : 50000)
+                            ->default(50000)
+                            ->live(onBlur: true)
+                            ->columnSpan(1),
+
+                        Forms\Components\TextInput::make('setup_fee')
+                            ->label(app()->getLocale() === 'id' ? 'Biaya Setup / Onboarding Awal' : 'Initial Setup / Onboarding Fee')
+                            ->visible(fn (Get $get) => $get('billing_type') === 'subscription')
+                            ->prefix('Rp')
+                            ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                            ->stripCharacters('.')
+                            ->formatStateUsing(fn ($state) => $state !== null ? (int) $state : 0)
+                            ->default(0)
+                            ->helperText(app()->getLocale() === 'id' ? 'Biaya satu kali saat implementasi awal (opsional).' : 'One-time initial fee (optional).')
+                            ->live(onBlur: true)
+                            ->columnSpanFull(),
                     ])->columns(3),
 
                 Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Rincian Fitur & Lingkup Kerja' : 'Line Items / Features Scope')
-                    ->description(app()->getLocale() === 'id' ? 'Tambahkan fitur standar dari katalog atau masukkan fitur pengembangan kustom.' : 'Add standardized catalog modules or define custom development features.')
+                    ->description(fn (Get $get) => $get('billing_type') === 'subscription' && $get('subscription_basis') === 'per_user'
+                        ? (app()->getLocale() === 'id' 
+                            ? '💡 Pada skema Per-User, modul yang dipilih berfungsi sebagai rincian cakupan fitur yang didapatkan klien (Termasuk dalam tarif lisensi user / All-Inclusive).' 
+                            : '💡 Under Per-User scheme, selected modules serve as the included feature scope for the client (All-Inclusive in user pricing).')
+                        : (app()->getLocale() === 'id' 
+                            ? 'Tambahkan fitur standar dari katalog atau masukkan fitur pengembangan kustom.' 
+                            : 'Add standardized catalog modules or define custom development features.'))
                     ->schema([
                         Forms\Components\Repeater::make('items')
                             ->label(app()->getLocale() === 'id' ? 'Daftar Fitur' : 'Features List')
@@ -135,17 +208,19 @@ class ProjectResource extends Resource
                                             $module = Module::find($state);
                                             if ($module) {
                                                 $set('item_name', $module->name);
-                                                $set('base_price', $module->base_price);
 
-                                                $exchangeRate = (float) ($get('../../exchange_rate') ?: 1);
+                                                $billingType = $get('../../billing_type') ?? 'one_off';
+                                                if ($billingType === 'subscription') {
+                                                    $basePrice = (float) ($module->subscription_price > 0 ? $module->subscription_price : round($module->base_price * 0.08, 2));
+                                                } else {
+                                                    $basePrice = (float) $module->base_price;
+                                                }
+
+                                                $set('base_price', (int) $basePrice);
+
                                                 $complexity = (float) ($get('complexity_weight') ?: 1.00);
-                                                $basePrice = (float) $module->base_price;
-
-                                                $calc = $exchangeRate > 0
-                                                    ? round(($basePrice * $complexity) / $exchangeRate, 2)
-                                                    : 0;
-
-                                                $set('calculated_price', $calc);
+                                                $calc = round($basePrice * $complexity, 2);
+                                                $set('calculated_price', (int) $calc);
                                             }
                                         }
                                     })
@@ -159,22 +234,19 @@ class ProjectResource extends Resource
                                     ->columnSpan(2),
 
                                 Forms\Components\TextInput::make('base_price')
-                                    ->label(app()->getLocale() === 'id' ? 'Harga Dasar (IDR)' : 'Base Price (IDR)')
+                                    ->label(app()->getLocale() === 'id' ? 'Harga Dasar' : 'Base Price')
                                     ->required()
-                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
                                     ->prefix('Rp')
-                                    ->minValue(0)
+                                    ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->stripCharacters('.')
+                                    ->formatStateUsing(fn ($state) => $state !== null ? (int) $state : 0)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
-                                        $basePrice = (float) ($state ?: 0);
+                                        $cleanBase = (float) str_replace('.', '', (string) ($state ?: 0));
                                         $complexity = (float) ($get('complexity_weight') ?: 1.00);
-                                        $exchangeRate = (float) ($get('../../exchange_rate') ?: 1);
 
-                                        $calc = $exchangeRate > 0
-                                            ? round(($basePrice * $complexity) / $exchangeRate, 2)
-                                            : 0;
-
-                                        $set('calculated_price', $calc);
+                                        $calc = round($cleanBase * $complexity, 2);
+                                        $set('calculated_price', (int) $calc);
                                     })
                                     ->columnSpan(1),
 
@@ -189,25 +261,24 @@ class ProjectResource extends Resource
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(function (Get $get, Set $set, ?string $state) {
                                         $complexity = (float) ($state ?: 1.00);
-                                        $basePrice = (float) ($get('base_price') ?: 0);
-                                        $exchangeRate = (float) ($get('../../exchange_rate') ?: 1);
+                                        $rawBase = $get('base_price') ?: 0;
+                                        $basePrice = (float) str_replace('.', '', (string) $rawBase);
 
-                                        $calc = $exchangeRate > 0
-                                            ? round(($basePrice * $complexity) / $exchangeRate, 2)
-                                            : 0;
-
-                                        $set('calculated_price', $calc);
+                                        $calc = round($basePrice * $complexity, 2);
+                                        $set('calculated_price', (int) $calc);
                                     })
                                     ->columnSpan(1),
 
                                 Forms\Components\TextInput::make('calculated_price')
                                     ->label(app()->getLocale() === 'id' ? 'Harga Terhitung' : 'Calculated Price')
                                     ->required()
-                                    ->currencyMask(thousandSeparator: '.', decimalSeparator: ',', precision: 2)
+                                    ->prefix('Rp')
+                                    ->mask(\Filament\Support\RawJs::make('$money($input, \',\', \'.\', 0)'))
+                                    ->stripCharacters('.')
+                                    ->formatStateUsing(fn ($state) => $state !== null ? (int) $state : 0)
                                     ->disabled()
                                     ->dehydrated()
-                                    ->prefix(fn (Get $get) => $get('../../currency_code') ?: 'IDR')
-                                    ->helperText(app()->getLocale() === 'id' ? 'Rumus: (Harga Dasar * Bobot) / Kurs' : 'Formula: (Base * Weight) / Exchange Rate')
+                                    ->helperText(app()->getLocale() === 'id' ? 'Rumus: Harga Dasar × Bobot Kompleksitas' : 'Formula: Base Price × Complexity Weight')
                                     ->columnSpan(2),
                             ])
                             ->columns(4)
@@ -222,17 +293,67 @@ class ProjectResource extends Resource
                             ->label(app()->getLocale() === 'id' ? 'Estimasi Total Penawaran' : 'Estimated Total Quotation')
                             ->content(function (Get $get) {
                                 $items = $get('items') ?? [];
-                                $currency = $get('currency_code') ?? 'IDR';
-                                $total = 0;
+                                $itemsTotal = 0;
 
                                 foreach ($items as $item) {
-                                    $total += (float) ($item['calculated_price'] ?? 0);
+                                    $rawPrice = $item['calculated_price'] ?? 0;
+                                    $itemsTotal += (float) str_replace('.', '', (string) $rawPrice);
+                                }
+
+                                $billingType = $get('billing_type') ?? 'one_off';
+
+                                if ($billingType === 'subscription') {
+                                    $basis = $get('subscription_basis') ?? 'modular';
+                                    $cycle = $get('billing_cycle') ?? 'monthly';
+                                    $duration = (int) ($get('subscription_duration') ?: 1);
+                                    $setupFee = (float) str_replace('.', '', (string) ($get('setup_fee') ?: 0));
+
+                                    $userCount = (int) ($get('user_count') ?: 0);
+                                    $pricePerUser = (float) str_replace('.', '', (string) ($get('price_per_user') ?: 0));
+                                    $userRecurring = $userCount * $pricePerUser;
+
+                                    $recurringTotal = match ($basis) {
+                                        'per_user' => $userRecurring,
+                                        'hybrid' => $itemsTotal + $userRecurring,
+                                        default => $itemsTotal,
+                                    };
+
+                                    $grandTotal = $setupFee + ($recurringTotal * $duration);
+
+                                    $cycleText = $cycle === 'yearly' ? (app()->getLocale() === 'id' ? '/ tahun' : '/ year') : (app()->getLocale() === 'id' ? '/ bulan' : '/ month');
+                                    $unitText = $cycle === 'yearly' ? (app()->getLocale() === 'id' ? 'Tahun' : 'Years') : (app()->getLocale() === 'id' ? 'Bulan' : 'Months');
+
+                                    $recurringFormatted = \Illuminate\Support\Number::currency($recurringTotal, 'IDR', 'id') . ' ' . $cycleText;
+                                    $grandFormatted = \Illuminate\Support\Number::currency($grandTotal, 'IDR', 'id');
+                                    $setupFormatted = \Illuminate\Support\Number::currency($setupFee, 'IDR', 'id');
+
+                                    $breakdown = [];
+                                    if ($basis === 'hybrid' || $basis === 'modular') {
+                                        $breakdown[] = "Biaya Modul: " . \Illuminate\Support\Number::currency($itemsTotal, 'IDR', 'id') . $cycleText;
+                                    }
+                                    if ($basis === 'hybrid' || $basis === 'per_user') {
+                                        $breakdown[] = "Pengguna: {$userCount} User @ " . \Illuminate\Support\Number::currency($pricePerUser, 'IDR', 'id') . " (" . \Illuminate\Support\Number::currency($userRecurring, 'IDR', 'id') . "{$cycleText})";
+                                    }
+                                    if ($setupFee > 0) {
+                                        $breakdown[] = "Setup Fee: {$setupFormatted}";
+                                    }
+                                    $breakdown[] = "Komitmen: {$duration} {$unitText}";
+
+                                    $breakdownHtml = "<div style='font-size: 11.5px; color: #64748b; margin-top: 2px;'>" . implode(' | ', $breakdown) . "</div>";
+
+                                    return new \Illuminate\Support\HtmlString(
+                                        "<div style='line-height: 1.6;'>" .
+                                        "<div style='font-size: 14px; font-weight: 600; color: #2563eb;'>Biaya Berulang: <strong>{$recurringFormatted}</strong></div>" .
+                                        $breakdownHtml .
+                                        "<div style='font-size: 16px; font-weight: 700; color: #0f172a; margin-top: 4px;'>Total Nilai Kontrak: {$grandFormatted}</div>" .
+                                        "</div>"
+                                    );
                                 }
 
                                 return \Illuminate\Support\Number::currency(
-                                    $total,
-                                    $currency,
-                                    $currency === 'IDR' ? 'id' : 'en'
+                                    $itemsTotal,
+                                    'IDR',
+                                    'id'
                                 );
                             }),
                     ]),
@@ -244,9 +365,10 @@ class ProjectResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')
-                    ->label('#ID')
-                    ->formatStateUsing(fn ($state) => 'QUO-' . str_pad($state, 5, '0', STR_PAD_LEFT))
-                    ->sortable(),
+                    ->label('#ID Penawaran')
+                    ->formatStateUsing(fn (Project $record) => $record->getQuotationCode())
+                    ->sortable()
+                    ->weight('bold'),
 
                 Tables\Columns\TextColumn::make('client_name')
                     ->label(app()->getLocale() === 'id' ? 'Nama Klien' : 'Client Name')
@@ -254,29 +376,43 @@ class ProjectResource extends Resource
                     ->sortable()
                     ->weight('bold'),
 
+                Tables\Columns\TextColumn::make('quotation_type')
+                    ->label('Tipe')
+                    ->formatStateUsing(fn ($state) => $state === 'addendum' ? 'Adendum' : 'Standar')
+                    ->badge()
+                    ->color(fn ($state) => $state === 'addendum' ? 'warning' : 'gray')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('billing_type')
+                    ->label(app()->getLocale() === 'id' ? 'Skema Kontrak' : 'Billing Scheme')
+                    ->formatStateUsing(function ($record) {
+                        if ($record->billing_type === 'subscription') {
+                            $cycle = $record->billing_cycle === 'yearly' ? 'Tahunan' : 'Bulanan';
+                            $basis = match ($record->subscription_basis) {
+                                'per_user' => 'Per-User',
+                                'hybrid' => 'Hybrid',
+                                default => 'Modular',
+                            };
+                            return "Langganan ({$basis} - {$cycle})";
+                        }
+                        return 'Putus Kontrak';
+                    })
+                    ->badge()
+                    ->color(fn ($record): string => $record->billing_type === 'subscription' ? 'info' : 'gray')
+                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('user.name')
                     ->label(app()->getLocale() === 'id' ? 'Dibuat Oleh' : 'Created By')
                     ->badge()
                     ->color('gray')
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('currency_code')
-                    ->label(app()->getLocale() === 'id' ? 'Mata Uang' : 'Currency')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'USD' => 'success',
-                        'EUR' => 'warning',
-                        'SGD' => 'info',
-                        default => 'primary',
-                    })
-                    ->sortable(),
-
                 Tables\Columns\TextColumn::make('grand_total')
                     ->label('Grand Total')
                     ->formatStateUsing(fn ($record) => \Illuminate\Support\Number::currency(
                         $record->grand_total,
-                        $record->currency_code,
-                        $record->currency_code === 'IDR' ? 'id' : 'en'
+                        'IDR',
+                        'id'
                     ))
                     ->sortable()
                     ->weight('bold'),
@@ -297,22 +433,121 @@ class ProjectResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('quotation_type')
+                    ->label(app()->getLocale() === 'id' ? 'Filter Tipe Dokumen' : 'Filter Document Type')
+                    ->options([
+                        'standard' => 'Kontrak Standar',
+                        'addendum' => 'Adendum Penyesuaian',
+                    ]),
+
+                Tables\Filters\SelectFilter::make('billing_type')
+                    ->label(app()->getLocale() === 'id' ? 'Filter Skema Kontrak' : 'Filter Billing Scheme')
+                    ->options([
+                        'one_off' => app()->getLocale() === 'id' ? 'Putus Kontrak' : 'One-Off',
+                        'subscription' => app()->getLocale() === 'id' ? 'Berlangganan (Subscription)' : 'Subscription',
+                    ]),
+
+                Tables\Filters\SelectFilter::make('subscription_basis')
+                    ->label(app()->getLocale() === 'id' ? 'Filter Metode Langganan' : 'Filter Subscription Basis')
+                    ->options([
+                        'modular' => 'Flat Modular',
+                        'per_user' => 'Per-User',
+                        'hybrid' => 'Hybrid',
+                    ]),
+
                 Tables\Filters\SelectFilter::make('status')
                     ->label(app()->getLocale() === 'id' ? 'Filter Status' : 'Filter Status')
                     ->options([
                         'Draft' => 'Draft',
                         'Generated' => 'Generated',
                     ]),
-                Tables\Filters\SelectFilter::make('currency_code')
-                    ->label(app()->getLocale() === 'id' ? 'Filter Mata Uang' : 'Filter Currency')
-                    ->options([
-                        'IDR' => 'IDR',
-                        'USD' => 'USD',
-                        'EUR' => 'EUR',
-                        'SGD' => 'SGD',
-                    ]),
             ])
             ->actions([
+                Tables\Actions\Action::make('create_addendum')
+                    ->label('Buat Adendum')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('warning')
+                    ->visible(fn (Project $record) => $record->billing_type === 'subscription' || $record->status === 'Generated')
+                    ->form([
+                        Forms\Components\Select::make('addendum_type')
+                            ->label('Tipe Penyesuaian Adendum')
+                            ->placeholder('-- Pilih Jenis Penyesuaian Adendum --')
+                            ->options([
+                                'user_capacity' => 'Penyesuaian / Penambahan Kapasitas User',
+                                'module_expansion' => 'Penambahan Fitur / Modul Baru',
+                                'contract_renewal' => 'Upgrade Penuh & Perpanjangan Kontrak',
+                            ])
+                            ->helperText('Pilih skenario perubahan ruang lingkup atau kapasitas kontrak.')
+                            ->required()
+                            ->live(),
+
+                        Forms\Components\TextInput::make('remaining_duration')
+                            ->label('Sisa Durasi Berjalan (Bulan / Tahun)')
+                            ->placeholder('Contoh: 6')
+                            ->helperText('Sisa periode kontrak berjalan yang akan ditagihkan (dalam bulan / tahun).')
+                            ->numeric()
+                            ->minValue(1)
+                            ->required(),
+
+                        Forms\Components\TextInput::make('new_user_count')
+                            ->label('Jumlah Kapasitas User (Total / Tambahan)')
+                            ->placeholder('Contoh: 50 atau 100')
+                            ->helperText('Masukkan kuota pengguna aktif baru atau penambahan kapasitas user.')
+                            ->numeric()
+                            ->minValue(1)
+                            ->visible(fn (Project $record) => $record->billing_type === 'subscription')
+                            ->required(fn (Project $record) => $record->billing_type === 'subscription'),
+
+                        Forms\Components\Textarea::make('addendum_notes')
+                            ->label('Catatan Ruang Lingkup Adendum')
+                            ->placeholder('Contoh: Penyesuaian kuota pengguna aktif dari 50 menjadi 100 user untuk sisa masa kontrak 6 bulan.')
+                            ->helperText('Tuliskan rincian kesepakatan adendum yang akan dicantumkan pada surat penawaran resmi.')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->action(function (Project $record, array $data) {
+                        $nextNum = $record->getNextAddendumNumber();
+                        $newProject = Project::create([
+                            'parent_id' => $record->id,
+                            'quotation_type' => 'addendum',
+                            'addendum_number' => $nextNum,
+                            'user_id' => auth()->id(),
+                            'client_name' => $record->client_name,
+                            'status' => 'Draft',
+                            'billing_type' => $record->billing_type,
+                            'subscription_basis' => $record->subscription_basis,
+                            'billing_cycle' => $record->billing_cycle,
+                            'subscription_duration' => (int) ($data['remaining_duration'] ?? $record->subscription_duration),
+                            'user_count' => (int) ($data['new_user_count'] ?? $record->user_count),
+                            'price_per_user' => $record->price_per_user,
+                            'setup_fee' => 0.00, // setup fee waived on addendum
+                            'addendum_notes' => $data['addendum_notes'] ?? null,
+                            'grand_total' => 0.00,
+                        ]);
+
+                        // Clone items if applicable
+                        if ($data['addendum_type'] !== 'user_capacity') {
+                            foreach ($record->items as $item) {
+                                $newProject->items()->create([
+                                    'module_id' => $item->module_id,
+                                    'item_name' => $item->item_name,
+                                    'base_price' => $item->base_price,
+                                    'complexity_weight' => $item->complexity_weight,
+                                    'calculated_price' => $item->calculated_price,
+                                ]);
+                            }
+                        }
+
+                        $newProject->recalculateGrandTotal();
+
+                        \Filament\Notifications\Notification::make()
+                            ->title("Dokumen Adendum #{$newProject->getQuotationCode()} Berhasil Dibuat")
+                            ->success()
+                            ->send();
+
+                        return redirect(ProjectResource::getUrl('edit', ['record' => $newProject]));
+                    }),
+
                 Tables\Actions\Action::make('print_pdf')
                     ->label('PDF')
                     ->icon('heroicon-o-printer')
@@ -327,24 +562,6 @@ class ProjectResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
-    }
-
-    protected static function recalculateAllItems(Get $get, Set $set): void
-    {
-        $items = $get('items') ?? [];
-        $exchangeRate = (float) ($get('exchange_rate') ?: 1);
-
-        if ($exchangeRate <= 0) {
-            $exchangeRate = 1;
-        }
-
-        foreach ($items as $key => $item) {
-            $basePrice = (float) ($item['base_price'] ?? 0);
-            $complexity = (float) ($item['complexity_weight'] ?? 1.00);
-
-            $calc = round(($basePrice * $complexity) / $exchangeRate, 2);
-            $set("items.{$key}.calculated_price", $calc);
-        }
     }
 
     public static function getRelations(): array

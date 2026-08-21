@@ -13,6 +13,7 @@ class Module extends Model
     protected $fillable = [
         'name',
         'base_price',
+        'subscription_price',
         'category',
     ];
 
@@ -20,6 +21,7 @@ class Module extends Model
     {
         return [
             'base_price' => 'decimal:2',
+            'subscription_price' => 'decimal:2',
         ];
     }
 

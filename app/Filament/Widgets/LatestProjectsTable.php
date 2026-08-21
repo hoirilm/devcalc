@@ -44,22 +44,12 @@ class LatestProjectsTable extends BaseWidget
                     ->badge()
                     ->color('gray'),
 
-                Tables\Columns\TextColumn::make('currency_code')
-                    ->label(app()->getLocale() === 'id' ? 'Mata Uang' : 'Currency')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'USD' => 'success',
-                        'EUR' => 'warning',
-                        'SGD' => 'info',
-                        default => 'primary',
-                    }),
-
                 Tables\Columns\TextColumn::make('grand_total')
                     ->label('Grand Total')
                     ->formatStateUsing(fn ($record) => \Illuminate\Support\Number::currency(
                         $record->grand_total,
-                        $record->currency_code,
-                        $record->currency_code === 'IDR' ? 'id' : 'en'
+                        'IDR',
+                        'id'
                     ))
                     ->weight('bold'),
 

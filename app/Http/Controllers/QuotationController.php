@@ -20,11 +20,7 @@ class QuotationController extends Controller
         $project->load(['user', 'items.module']);
 
         // Recalculate grand total to ensure precision
-        $grandTotal = $project->items->sum('calculated_price');
-        if ((float) $project->grand_total !== (float) $grandTotal) {
-            $project->grand_total = $grandTotal;
-            $project->saveQuietly();
-        }
+        $project->recalculateGrandTotal();
 
         $pdf = Pdf::loadView('pdf.quotation', [
             'project' => $project,
@@ -32,7 +28,8 @@ class QuotationController extends Controller
 
         $pdf->setPaper('a4', 'portrait');
 
-        $filename = 'Quotation-' . str_pad($project->id, 5, '0', STR_PAD_LEFT) . '-' . str($project->client_name)->slug() . '.pdf';
+        $code = $project->getQuotationCode();
+        $filename = 'Penawaran-' . $code . '-' . str($project->client_name)->slug() . '.pdf';
 
         if ($request->has('download')) {
             return $pdf->download($filename);
