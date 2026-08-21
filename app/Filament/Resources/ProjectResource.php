@@ -363,59 +363,77 @@ class ProjectResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('created_at', 'desc')
             ->columns([
-                Tables\Columns\TextColumn::make('id')
-                    ->label('#ID Penawaran')
-                    ->formatStateUsing(fn (Project $record) => $record->getQuotationCode())
-                    ->sortable()
-                    ->weight('bold'),
-
                 Tables\Columns\TextColumn::make('client_name')
-                    ->label(app()->getLocale() === 'id' ? 'Nama Klien' : 'Client Name')
-                    ->searchable()
+                    ->label(app()->getLocale() === 'id' ? 'Penawaran & Klien' : 'Quotation & Client')
+                    ->searchable(['client_name', 'id'])
                     ->sortable()
-                    ->weight('bold'),
-
-                Tables\Columns\TextColumn::make('quotation_type')
-                    ->label('Tipe')
-                    ->formatStateUsing(fn ($state) => $state === 'addendum' ? 'Adendum' : 'Standar')
-                    ->badge()
-                    ->color(fn ($state) => $state === 'addendum' ? 'warning' : 'gray')
-                    ->sortable(),
+                    ->weight('bold')
+                    ->description(function (Project $record): string {
+                        $code = $record->getQuotationCode();
+                        $date = $record->created_at ? $record->created_at->format('d M Y') : '-';
+                        return "#{$code} • {$date}";
+                    })
+                    ->icon('heroicon-o-briefcase')
+                    ->iconColor('primary'),
 
                 Tables\Columns\TextColumn::make('billing_type')
-                    ->label(app()->getLocale() === 'id' ? 'Skema Kontrak' : 'Billing Scheme')
-                    ->formatStateUsing(function ($record) {
+                    ->label(app()->getLocale() === 'id' ? 'Skema & Tipe' : 'Scheme & Type')
+                    ->badge()
+                    ->formatStateUsing(function (Project $record): string {
                         if ($record->billing_type === 'subscription') {
-                            $cycle = $record->billing_cycle === 'yearly' ? 'Tahunan' : 'Bulanan';
                             $basis = match ($record->subscription_basis) {
                                 'per_user' => 'Per-User',
                                 'hybrid' => 'Hybrid',
                                 default => 'Modular',
                             };
-                            return "Langganan ({$basis} - {$cycle})";
+                            return "Langganan ({$basis})";
                         }
                         return 'Putus Kontrak';
                     })
-                    ->badge()
-                    ->color(fn ($record): string => $record->billing_type === 'subscription' ? 'info' : 'gray')
-                    ->sortable(),
-
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label(app()->getLocale() === 'id' ? 'Dibuat Oleh' : 'Created By')
-                    ->badge()
-                    ->color('gray')
+                    ->color(fn (Project $record): string => $record->billing_type === 'subscription' ? 'info' : 'gray')
+                    ->description(function (Project $record): ?string {
+                        if ($record->isAddendum()) {
+                            $parentCode = $record->parent ? $record->parent->getQuotationCode() : "ID #{$record->parent_id}";
+                            return "📑 Adendum (Induk: #{$parentCode})";
+                        }
+                        if ($record->billing_type === 'subscription') {
+                            $cycle = $record->billing_cycle === 'yearly' ? 'Tahunan' : 'Bulanan';
+                            if (in_array($record->subscription_basis, ['per_user', 'hybrid'])) {
+                                return "{$record->user_count} User • {$record->subscription_duration} {$cycle}";
+                            }
+                            return "{$record->subscription_duration} {$cycle}";
+                        }
+                        return $record->items->count() . ' Modul Terhitung';
+                    })
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('grand_total')
-                    ->label('Grand Total')
+                    ->label(app()->getLocale() === 'id' ? 'Nilai Penawaran' : 'Quotation Value')
                     ->formatStateUsing(fn ($record) => \Illuminate\Support\Number::currency(
                         $record->grand_total,
                         'IDR',
                         'id'
                     ))
+                    ->description(function (Project $record): ?string {
+                        if ($record->billing_type === 'subscription') {
+                            $recurring = \Illuminate\Support\Number::currency($record->getRecurringPerCycle(), 'IDR', 'id');
+                            $cycle = $record->billing_cycle === 'yearly' ? '/th' : '/bln';
+                            return "Berulang: {$recurring} {$cycle}";
+                        }
+                        return null;
+                    })
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->color('primary'),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label(app()->getLocale() === 'id' ? 'Estimator' : 'Estimator')
+                    ->badge()
+                    ->color('gray')
+                    ->icon('heroicon-o-user')
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
@@ -424,31 +442,33 @@ class ProjectResource extends Resource
                         'Generated' => 'success',
                         default => 'warning',
                     })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'Generated' => 'Resmi (Generated)',
+                        default => 'Draft Berjalan',
+                    })
+                    ->icon(fn (string $state): string => match ($state) {
+                        'Generated' => 'heroicon-s-check-circle',
+                        default => 'heroicon-s-clock',
+                    })
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('created_at')
-                    ->label(app()->getLocale() === 'id' ? 'Tanggal Dibuat' : 'Created Date')
-                    ->dateTime('d M Y')
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('quotation_type')
-                    ->label(app()->getLocale() === 'id' ? 'Filter Tipe Dokumen' : 'Filter Document Type')
+                    ->label(app()->getLocale() === 'id' ? 'Tipe Dokumen' : 'Document Type')
                     ->options([
                         'standard' => 'Kontrak Standar',
                         'addendum' => 'Adendum Penyesuaian',
                     ]),
 
                 Tables\Filters\SelectFilter::make('billing_type')
-                    ->label(app()->getLocale() === 'id' ? 'Filter Skema Kontrak' : 'Filter Billing Scheme')
+                    ->label(app()->getLocale() === 'id' ? 'Skema Kontrak' : 'Billing Scheme')
                     ->options([
                         'one_off' => app()->getLocale() === 'id' ? 'Putus Kontrak' : 'One-Off',
                         'subscription' => app()->getLocale() === 'id' ? 'Berlangganan (Subscription)' : 'Subscription',
                     ]),
 
                 Tables\Filters\SelectFilter::make('subscription_basis')
-                    ->label(app()->getLocale() === 'id' ? 'Filter Metode Langganan' : 'Filter Subscription Basis')
+                    ->label(app()->getLocale() === 'id' ? 'Metode Langganan' : 'Subscription Basis')
                     ->options([
                         'modular' => 'Flat Modular',
                         'per_user' => 'Per-User',
@@ -456,106 +476,134 @@ class ProjectResource extends Resource
                     ]),
 
                 Tables\Filters\SelectFilter::make('status')
-                    ->label(app()->getLocale() === 'id' ? 'Filter Status' : 'Filter Status')
+                    ->label('Status')
                     ->options([
                         'Draft' => 'Draft',
                         'Generated' => 'Generated',
                     ]),
             ])
             ->actions([
-                Tables\Actions\Action::make('create_addendum')
-                    ->label('Buat Adendum')
-                    ->icon('heroicon-o-document-duplicate')
-                    ->color('warning')
-                    ->visible(fn (Project $record) => $record->billing_type === 'subscription' || $record->status === 'Generated')
-                    ->form([
-                        Forms\Components\Select::make('addendum_type')
-                            ->label('Tipe Penyesuaian Adendum')
-                            ->placeholder('-- Pilih Jenis Penyesuaian Adendum --')
-                            ->options([
-                                'user_capacity' => 'Penyesuaian / Penambahan Kapasitas User',
-                                'module_expansion' => 'Penambahan Fitur / Modul Baru',
-                                'contract_renewal' => 'Upgrade Penuh & Perpanjangan Kontrak',
-                            ])
-                            ->helperText('Pilih skenario perubahan ruang lingkup atau kapasitas kontrak.')
-                            ->required()
-                            ->live(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\Action::make('view_summary')
+                        ->label('Lihat Ringkasan')
+                        ->icon('heroicon-o-eye')
+                        ->color('info')
+                        ->modalHeading(fn (Project $record) => "Ringkasan Penawaran #{$record->getQuotationCode()}")
+                        ->modalDescription(fn (Project $record) => "Klien: {$record->client_name} • Dibuat oleh {$record->user->name}")
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup')
+                        ->modalContent(fn (Project $record) => view('filament.modals.project-summary', ['project' => $record])),
 
-                        Forms\Components\TextInput::make('remaining_duration')
-                            ->label('Sisa Durasi Berjalan (Bulan / Tahun)')
-                            ->placeholder('Contoh: 6')
-                            ->helperText('Sisa periode kontrak berjalan yang akan ditagihkan (dalam bulan / tahun).')
-                            ->numeric()
-                            ->minValue(1)
-                            ->required(),
+                    Tables\Actions\Action::make('print_pdf')
+                        ->label('Cetak / Unduh PDF')
+                        ->icon('heroicon-o-printer')
+                        ->color('success')
+                        ->url(fn (Project $record): string => route('projects.pdf', $record))
+                        ->openUrlInNewTab(),
 
-                        Forms\Components\TextInput::make('new_user_count')
-                            ->label('Jumlah Kapasitas User (Total / Tambahan)')
-                            ->placeholder('Contoh: 50 atau 100')
-                            ->helperText('Masukkan kuota pengguna aktif baru atau penambahan kapasitas user.')
-                            ->numeric()
-                            ->minValue(1)
-                            ->visible(fn (Project $record) => $record->billing_type === 'subscription')
-                            ->required(fn (Project $record) => $record->billing_type === 'subscription'),
+                    Tables\Actions\Action::make('create_addendum')
+                        ->label('Buat Adendum')
+                        ->icon('heroicon-o-document-duplicate')
+                        ->color('warning')
+                        ->visible(fn (Project $record) => $record->billing_type === 'subscription' || $record->status === 'Generated')
+                        ->form([
+                            Forms\Components\Select::make('addendum_type')
+                                ->label('Tipe Penyesuaian Adendum')
+                                ->placeholder('-- Pilih Jenis Penyesuaian Adendum --')
+                                ->options([
+                                    'user_capacity' => 'Penyesuaian / Penambahan Kapasitas User',
+                                    'module_expansion' => 'Penambahan Fitur / Modul Baru',
+                                    'contract_renewal' => 'Upgrade Penuh & Perpanjangan Kontrak',
+                                ])
+                                ->helperText('Pilih skenario perubahan ruang lingkup atau kapasitas kontrak.')
+                                ->required()
+                                ->live(),
 
-                        Forms\Components\Textarea::make('addendum_notes')
-                            ->label('Catatan Ruang Lingkup Adendum')
-                            ->placeholder('Contoh: Penyesuaian kuota pengguna aktif dari 50 menjadi 100 user untuk sisa masa kontrak 6 bulan.')
-                            ->helperText('Tuliskan rincian kesepakatan adendum yang akan dicantumkan pada surat penawaran resmi.')
-                            ->required()
-                            ->rows(3),
-                    ])
-                    ->action(function (Project $record, array $data) {
-                        $nextNum = $record->getNextAddendumNumber();
-                        $newProject = Project::create([
-                            'parent_id' => $record->id,
-                            'quotation_type' => 'addendum',
-                            'addendum_number' => $nextNum,
-                            'user_id' => auth()->id(),
-                            'client_name' => $record->client_name,
-                            'status' => 'Draft',
-                            'billing_type' => $record->billing_type,
-                            'subscription_basis' => $record->subscription_basis,
-                            'billing_cycle' => $record->billing_cycle,
-                            'subscription_duration' => (int) ($data['remaining_duration'] ?? $record->subscription_duration),
-                            'user_count' => (int) ($data['new_user_count'] ?? $record->user_count),
-                            'price_per_user' => $record->price_per_user,
-                            'setup_fee' => 0.00, // setup fee waived on addendum
-                            'addendum_notes' => $data['addendum_notes'] ?? null,
-                            'grand_total' => 0.00,
-                        ]);
+                            Forms\Components\TextInput::make('remaining_duration')
+                                ->label('Sisa Durasi Berjalan (Bulan / Tahun)')
+                                ->placeholder('Contoh: 6')
+                                ->helperText('Sisa periode kontrak berjalan yang akan ditagihkan (dalam bulan / tahun).')
+                                ->numeric()
+                                ->minValue(1)
+                                ->required(),
 
-                        // Clone items if applicable
-                        if ($data['addendum_type'] !== 'user_capacity') {
-                            foreach ($record->items as $item) {
-                                $newProject->items()->create([
-                                    'module_id' => $item->module_id,
-                                    'item_name' => $item->item_name,
-                                    'base_price' => $item->base_price,
-                                    'complexity_weight' => $item->complexity_weight,
-                                    'calculated_price' => $item->calculated_price,
-                                ]);
+                            Forms\Components\TextInput::make('new_user_count')
+                                ->label('Jumlah Kapasitas User (Total / Tambahan)')
+                                ->placeholder('Contoh: 50 atau 100')
+                                ->helperText('Masukkan kuota pengguna aktif baru atau penambahan kapasitas user.')
+                                ->numeric()
+                                ->minValue(1)
+                                ->visible(fn (Project $record) => $record->billing_type === 'subscription')
+                                ->required(fn (Project $record) => $record->billing_type === 'subscription'),
+
+                            Forms\Components\Textarea::make('addendum_notes')
+                                ->label('Catatan Ruang Lingkup Adendum')
+                                ->placeholder('Contoh: Penyesuaian kuota pengguna aktif dari 50 menjadi 100 user untuk sisa masa kontrak 6 bulan.')
+                                ->helperText('Tuliskan rincian kesepakatan adendum yang akan dicantumkan pada surat penawaran resmi.')
+                                ->required()
+                                ->rows(3),
+                        ])
+                        ->action(function (Project $record, array $data) {
+                            $nextNum = $record->getNextAddendumNumber();
+                            $newProject = Project::create([
+                                'parent_id' => $record->id,
+                                'quotation_type' => 'addendum',
+                                'addendum_number' => $nextNum,
+                                'user_id' => auth()->id(),
+                                'client_name' => $record->client_name,
+                                'status' => 'Draft',
+                                'billing_type' => $record->billing_type,
+                                'subscription_basis' => $record->subscription_basis,
+                                'billing_cycle' => $record->billing_cycle,
+                                'subscription_duration' => (int) ($data['remaining_duration'] ?? $record->subscription_duration),
+                                'user_count' => (int) ($data['new_user_count'] ?? $record->user_count),
+                                'price_per_user' => $record->price_per_user,
+                                'setup_fee' => 0.00,
+                                'addendum_notes' => $data['addendum_notes'] ?? null,
+                                'grand_total' => 0.00,
+                            ]);
+
+                            if ($data['addendum_type'] !== 'user_capacity') {
+                                foreach ($record->items as $item) {
+                                    $newProject->items()->create([
+                                        'module_id' => $item->module_id,
+                                        'item_name' => $item->item_name,
+                                        'base_price' => $item->base_price,
+                                        'complexity_weight' => $item->complexity_weight,
+                                        'calculated_price' => $item->calculated_price,
+                                    ]);
+                                }
                             }
-                        }
 
-                        $newProject->recalculateGrandTotal();
+                            $newProject->recalculateGrandTotal();
 
-                        \Filament\Notifications\Notification::make()
-                            ->title("Dokumen Adendum #{$newProject->getQuotationCode()} Berhasil Dibuat")
-                            ->success()
-                            ->send();
+                            \Filament\Notifications\Notification::make()
+                                ->title("Dokumen Adendum #{$newProject->getQuotationCode()} Berhasil Dibuat")
+                                ->success()
+                                ->send();
 
-                        return redirect(ProjectResource::getUrl('edit', ['record' => $newProject]));
-                    }),
+                            return redirect(ProjectResource::getUrl('edit', ['record' => $newProject]));
+                        }),
 
-                Tables\Actions\Action::make('print_pdf')
-                    ->label('PDF')
-                    ->icon('heroicon-o-printer')
-                    ->color('success')
-                    ->url(fn (Project $record): string => route('projects.pdf', $record))
-                    ->openUrlInNewTab(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                    Tables\Actions\EditAction::make()
+                        ->label('Ubah Penawaran')
+                        ->icon('heroicon-o-pencil-square'),
+
+                    Tables\Actions\DeleteAction::make()
+                        ->label('Hapus'),
+                ])
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->tooltip('Menu Aksi'),
+            ])
+            ->emptyStateHeading('Belum Ada Penawaran')
+            ->emptyStateDescription('Mulai buat kalkulasi estimasi biaya atau penawaran harga software baru.')
+            ->emptyStateIcon('heroicon-o-document-chart-bar')
+            ->emptyStateActions([
+                Tables\Actions\Action::make('create')
+                    ->label('Buat Penawaran Baru')
+                    ->url(ProjectResource::getUrl('create'))
+                    ->icon('heroicon-o-plus')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

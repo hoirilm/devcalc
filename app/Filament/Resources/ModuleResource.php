@@ -92,32 +92,42 @@ class ModuleResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->defaultSort('name', 'asc')
             ->columns([
                 Tables\Columns\TextColumn::make('name')
-                    ->label(app()->getLocale() === 'id' ? 'Nama Modul' : 'Module Name')
-                    ->searchable()
+                    ->label(app()->getLocale() === 'id' ? 'Nama Modul & Deskripsi' : 'Module Name & Scope')
+                    ->searchable(['name', 'description'])
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->icon('heroicon-o-cube')
+                    ->iconColor('primary')
+                    ->description(fn (Module $record): ?string => $record->description),
 
                 Tables\Columns\TextColumn::make('category')
-                    ->label(app()->getLocale() === 'id' ? 'Kategori' : 'Category')
+                    ->label(app()->getLocale() === 'id' ? 'Kategori Domain' : 'Category')
                     ->searchable()
                     ->badge()
                     ->color('info')
+                    ->icon('heroicon-o-tag')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('base_price')
-                    ->label(app()->getLocale() === 'id' ? 'Beli Putus' : 'One-Off')
+                    ->label(app()->getLocale() === 'id' ? 'Harga Beli Putus' : 'One-Off Price')
                     ->money('IDR', locale: 'id')
+                    ->weight('bold')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('subscription_price')
-                    ->label(app()->getLocale() === 'id' ? 'Langganan / Bln' : 'Sub / Month')
+                    ->label(app()->getLocale() === 'id' ? 'Langganan / Bulan' : 'Sub / Month')
                     ->money('IDR', locale: 'id')
+                    ->weight('bold')
+                    ->color('success')
+                    ->description(fn (Module $record): string => $record->subscription_price > 0 ? 'Tarif pemeliharaan rutin' : 'Mengikuti estimasi 8%')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime('d M Y H:i')
+                    ->label(app()->getLocale() === 'id' ? 'Dibuat' : 'Created')
+                    ->dateTime('d M Y')
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
@@ -127,8 +137,25 @@ class ModuleResource extends Resource
                     ->options(fn () => Module::query()->whereNotNull('category')->distinct()->pluck('category', 'category')->toArray()),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                Tables\Actions\ActionGroup::make([
+                    Tables\Actions\EditAction::make()
+                        ->label('Ubah Modul')
+                        ->icon('heroicon-o-pencil-square'),
+                    Tables\Actions\DeleteAction::make()
+                        ->label('Hapus'),
+                ])
+                ->icon('heroicon-m-ellipsis-vertical')
+                ->tooltip('Menu Aksi'),
+            ])
+            ->emptyStateHeading('Katalog Modul Kosong')
+            ->emptyStateDescription('Tambahkan fitur atau modul standar baru ke dalam katalog master data.')
+            ->emptyStateIcon('heroicon-o-cube-transparent')
+            ->emptyStateActions([
+                Tables\Actions\Action::make('create')
+                    ->label('Tambah Modul Baru')
+                    ->url(ModuleResource::getUrl('create'))
+                    ->icon('heroicon-o-plus')
+                    ->button(),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

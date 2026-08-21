@@ -33,8 +33,17 @@ class AdminPanelProvider extends PanelProvider
             ->font('Inter')
             ->login()
             ->colors([
-                'primary' => Color::Blue,
+                'primary' => Color::Indigo,
+                'gray' => Color::Slate,
+                'info' => Color::Sky,
+                'success' => Color::Emerald,
+                'warning' => Color::Amber,
+                'danger' => Color::Rose,
             ])
+            ->renderHook(
+                'panels::head.done',
+                fn () => view('filament.custom-styles')
+            )
             ->userMenuItems([
                 MenuItem::make()
                     ->label(fn () => app()->getLocale() === 'id' ? '🇮🇩 Bahasa Indonesia (Aktif)' : '🇮🇩 Ganti ke Bahasa Indonesia')
@@ -52,7 +61,7 @@ class AdminPanelProvider extends PanelProvider
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\\Filament\\Pages')
             ->pages([
-                Pages\Dashboard::class,
+                \App\Filament\Pages\Dashboard::class,
                 Help::class,
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')

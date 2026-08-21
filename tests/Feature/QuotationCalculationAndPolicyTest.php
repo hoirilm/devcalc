@@ -360,7 +360,10 @@ class QuotationCalculationAndPolicyTest extends TestCase
 
         \Livewire\Livewire::actingAs($this->admin)
             ->test(\App\Filament\Resources\ProjectResource\Pages\ListProjects::class)
-            ->assertSuccessful();
+            ->assertSuccessful()
+            ->assertCanSeeTableRecords([$project])
+            ->assertTableActionExists('view_summary')
+            ->assertTableActionExists('print_pdf');
 
         \Livewire\Livewire::actingAs($this->admin)
             ->test(\App\Filament\Resources\ProjectResource\Pages\CreateProject::class)
@@ -373,12 +376,16 @@ class QuotationCalculationAndPolicyTest extends TestCase
             ->assertSuccessful();
 
         \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Resources\ModuleResource\Pages\ListModules::class)
+            ->test(\App\Filament\Resources\ModuleResource\Pages\CreateModule::class)
             ->assertSuccessful();
 
         \Livewire\Livewire::actingAs($this->admin)
-            ->test(\App\Filament\Resources\ModuleResource\Pages\CreateModule::class)
-            ->assertSuccessful();
+            ->test(\App\Filament\Widgets\QuickCalculatorWidget::class)
+            ->assertSuccessful()
+            ->call('setMode', 'subscription')
+            ->assertSet('mode', 'subscription')
+            ->call('setMode', 'one_off')
+            ->assertSet('mode', 'one_off');
     }
 }
 
