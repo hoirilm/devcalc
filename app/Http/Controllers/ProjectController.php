@@ -291,4 +291,125 @@ class ProjectController extends Controller
 
         return redirect()->route('projects.edit', $newProject)->with('success', "Dokumen Adendum #{$newProject->getQuotationCode()} berhasil dibuat!");
     }
+
+    /**
+     * Export projects list to CSV stream.
+     */
+    public function exportCsv(Request $request)
+    {
+        $query = Project::with(['user', 'parent']);
+
+        if ($billingType = $request->input('billing_type')) {
+            $query->where('billing_type', $billingType);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($dateRange = $request->input('date_range')) {
+            match ($dateRange) {
+                'month' => $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year),
+                'quarter' => $query->whereBetween('created_at', [now()->startOfQuarter(), now()->endOfQuarter()]),
+                'year' => $query->whereYear('created_at', now()->year),
+                default => null,
+            };
+        }
+
+        $projects = $query->latest()->get();
+
+        $filename = 'Laporan_Penawaran_DevCalc_' . date('Ymd_His') . '.csv';
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+            'Pragma' => 'no-cache',
+            'Cache-Control' => 'must-revalidate, post-check=0, pre-check=0',
+            'Expires' => '0',
+        ];
+
+        $callback = function () use ($projects) {
+            $file = fopen('php://output', 'w');
+            
+            // UTF-8 BOM for Microsoft Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // CSV Header Row
+            fputcsv($file, [
+                'No. Penawaran',
+                'Nama Klien',
+                'Tipe Dokumen',
+                'Skema Pembayaran',
+                'Basis SaaS / Duration',
+                'Jumlah User',
+                'Biaya Setup (Rp)',
+                'Garansi SLA (Bulan)',
+                'Grand Total (Rp)',
+                'Estimator',
+                'Status',
+                'Tanggal Dibuat',
+            ]);
+
+            foreach ($projects as $project) {
+                fputcsv($file, [
+                    '#' . $project->getQuotationCode(),
+                    $project->client_name,
+                    $project->isAddendum() ? 'Adendum' : 'Penawaran Utama',
+                    $project->billing_type === 'subscription' ? 'Langganan (SaaS)' : 'Beli Putus (One-Off)',
+                    $project->billing_type === 'subscription' ? "{$project->subscription_basis} ({$project->subscription_duration} {$project->billing_cycle})" : '-',
+                    $project->user_count ?? 0,
+                    number_format($project->setup_fee, 0, ',', '.'),
+                    $project->maintenance_months ?? 3,
+                    number_format($project->grand_total, 0, ',', '.'),
+                    $project->user->name ?? 'System',
+                    $project->status,
+                    $project->created_at ? $project->created_at->format('Y-m-d H:i') : '-',
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Export executive PDF report.
+     */
+    public function exportPdf(Request $request)
+    {
+        $query = Project::with(['user', 'parent']);
+
+        if ($billingType = $request->input('billing_type')) {
+            $query->where('billing_type', $billingType);
+        }
+
+        if ($status = $request->input('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($dateRange = $request->input('date_range')) {
+            match ($dateRange) {
+                'month' => $query->whereMonth('created_at', now()->month)->whereYear('created_at', now()->year),
+                'quarter' => $query->whereBetween('created_at', [now()->startOfQuarter(), now()->endOfQuarter()]),
+                'year' => $query->whereYear('created_at', now()->year),
+                default => null,
+            };
+        }
+
+        $projects = $query->latest()->get();
+
+        $summary = [
+            'total_count' => $projects->count(),
+            'total_value' => $projects->sum('grand_total'),
+            'one_off_count' => $projects->where('billing_type', 'one_off')->count(),
+            'subscription_count' => $projects->where('billing_type', 'subscription')->count(),
+        ];
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('pdf.report', compact('projects', 'summary'));
+        $pdf->setPaper('A4', 'portrait');
+
+        $filename = 'Laporan_Eksekutif_DevCalc_' . date('Ymd_His') . '.pdf';
+        return $pdf->download($filename);
+    }
 }

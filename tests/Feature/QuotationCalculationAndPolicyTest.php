@@ -381,6 +381,27 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $this->assertDatabaseMissing('projects', ['id' => $p1->id]);
         $this->assertDatabaseMissing('projects', ['id' => $p2->id]);
     }
+
+    public function test_export_csv_report(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('projects.export.csv', [
+            'billing_type' => 'one_off',
+            'status' => 'Generated',
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'text/csv; charset=UTF-8');
+    }
+
+    public function test_export_pdf_executive_report(): void
+    {
+        $response = $this->actingAs($this->admin)->get(route('projects.export.pdf', [
+            'date_range' => 'month',
+        ]));
+
+        $response->assertStatus(200);
+        $response->assertHeader('content-type', 'application/pdf');
+    }
 }
 
 

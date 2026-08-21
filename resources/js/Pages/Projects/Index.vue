@@ -5,6 +5,7 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import Badge from '@/Components/Badge.vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmDeleteModal from '@/Components/ConfirmDeleteModal.vue';
+import ExportReportModal from '@/Components/ExportReportModal.vue';
 import ActionMenu from '@/Components/ActionMenu.vue';
 import { 
   Plus, 
@@ -22,7 +23,9 @@ import {
   AlertCircle,
   FileText,
   Check,
-  Minus
+  Minus,
+  Download,
+  FileDown
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -51,6 +54,7 @@ const sortFilter = ref(props.filters?.sort || 'latest');
 // Addendum Modal State
 const addendumModalOpen = ref(false);
 const targetProject = ref(null);
+const showExportModal = ref(false);
 
 const addendumForm = useForm({
   addendum_type: 'module_expansion',
@@ -227,13 +231,23 @@ function confirmBulkDelete() {
           </p>
         </div>
 
-        <Link
-          href="/projects/create"
-          class="px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
-        >
-          <Plus class="w-4 h-4" />
-          <span>Buat Penawaran Baru</span>
-        </Link>
+        <div class="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+          <button
+            @click="showExportModal = true"
+            class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-xs"
+          >
+            <FileDown class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span>Ekspor Laporan</span>
+          </button>
+
+          <Link
+            href="/projects/create"
+            class="px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Buat Penawaran Baru</span>
+          </Link>
+        </div>
       </div>
 
       <!-- Interactive Filters & Control Panel -->
@@ -652,6 +666,12 @@ function confirmBulkDelete() {
       :processing="isDeleting"
       @close="isBulkDeleteModalOpen = false"
       @confirm="confirmBulkDelete"
+    />
+
+    <!-- Export Report Modal -->
+    <ExportReportModal
+      :show="showExportModal"
+      @close="showExportModal = false"
     />
   </AppLayout>
 </template>

@@ -6,6 +6,7 @@ import CurrencyInput from '@/Components/CurrencyInput.vue';
 import Badge from '@/Components/Badge.vue';
 import Modal from '@/Components/Modal.vue';
 import ConfirmDeleteModal from '@/Components/ConfirmDeleteModal.vue';
+import ExportReportModal from '@/Components/ExportReportModal.vue';
 import SchemeBarChart from '@/Components/SchemeBarChart.vue';
 import ActionMenu from '@/Components/ActionMenu.vue';
 import { 
@@ -24,7 +25,9 @@ import {
   LayoutDashboard,
   X,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Download,
+  FileDown
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -50,6 +53,7 @@ watch(() => page.props.flash, (newFlash) => {
 // Addendum Modal State
 const addendumModalOpen = ref(false);
 const targetProject = ref(null);
+const showExportModal = ref(false);
 
 const addendumForm = useForm({
   addendum_type: 'module_expansion',
@@ -488,9 +492,18 @@ function goToHelp() {
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
         <div class="flex items-center justify-between">
           <h3 class="text-sm font-bold text-slate-900 dark:text-white">Penawaran Terbaru & Aksi Cepat</h3>
-          <Link href="/projects" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-            Lihat Semua Penawaran &rarr;
-          </Link>
+          <div class="flex items-center gap-3">
+            <button
+              @click="showExportModal = true"
+              class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs"
+            >
+              <FileDown class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>Ekspor Laporan</span>
+            </button>
+            <Link href="/projects" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
+              Lihat Semua &rarr;
+            </Link>
+          </div>
         </div>
 
         <div class="overflow-x-auto">
@@ -616,6 +629,12 @@ function goToHelp() {
       :processing="isDeleting"
       @close="deleteModalOpen = false"
       @confirm="confirmDeleteProject"
+    />
+
+    <!-- Export Report Modal -->
+    <ExportReportModal
+      :show="showExportModal"
+      @close="showExportModal = false"
     />
   </AppLayout>
 </template>

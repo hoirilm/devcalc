@@ -18,7 +18,8 @@ import {
   Info,
   BadgePercent,
   FilePlus,
-  Scale
+  Scale,
+  FileDown
 } from 'lucide-vue-next';
 
 const activeTab = ref('formulas'); // 'formulas' | 'faq' | 'workflow'
@@ -63,6 +64,11 @@ const faqs = [
     id: 7,
     question: 'Bagaimana cara mengunduh berkas PDF resmi penawaran?',
     answer: 'Pada tabel daftar penawaran harga, klik ikon printer "Cetak PDF" pada menu aksi. Sistem akan membuat dokumen PDF resmi siap cetak lengkap dengan rincian biaya, skema pembayaran, dan klausul garansi SLA.'
+  },
+  {
+    id: 8,
+    question: 'Bagaimana cara mengekspor laporan rekapitulasi penawaran ke format Excel CSV atau Executive PDF?',
+    answer: 'Klik tombol "Ekspor Laporan" dengan ikon berkas yang tersedia di header kontrol halaman Daftar Penawaran Harga atau Dasbor Utama. Pada modal ekspor yang muncul, pilih format (Excel CSV untuk olah data tabular atau Executive PDF Report untuk ringkasan KPI eksekutif) dan tentukan filter periode waktu, skema kontrak, serta status dokumen.'
   }
 ];
 </script>
@@ -99,37 +105,45 @@ const faqs = [
       </div>
 
       <!-- Quick Feature Cards Overview -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-indigo-300 dark:hover:border-indigo-800">
-          <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center">
-            <Calculator class="w-5 h-5" />
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3.5">
+        <div class="p-4.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-indigo-300 dark:hover:border-indigo-800">
+          <div class="w-9 h-9 rounded-2xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/60 flex items-center justify-center">
+            <Calculator class="w-4.5 h-4.5" />
           </div>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">1. Kalkulator Otomatis</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Estimasi instan biaya Beli Putus & Langganan SaaS berdasarkan bobot kompleksitas.</p>
+          <h3 class="text-xs font-extrabold text-slate-900 dark:text-white">1. Kalkulator Otomatis</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Estimasi instan biaya Beli Putus & Langganan SaaS.</p>
         </div>
 
-        <div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-emerald-300 dark:hover:border-emerald-800">
-          <div class="w-10 h-10 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center">
-            <ShieldCheck class="w-5 h-5" />
+        <div class="p-4.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-emerald-300 dark:hover:border-emerald-800">
+          <div class="w-9 h-9 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-center">
+            <ShieldCheck class="w-4.5 h-4.5" />
           </div>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">2. Garansi Maintenance SLA</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan garansi perbaikan bug gratis (1, 3, 6, 12 Bulan) tercantum otomatis dalam dokumen.</p>
+          <h3 class="text-xs font-extrabold text-slate-900 dark:text-white">2. Garansi SLA</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Pilihan garansi perbaikan bug gratis (1, 3, 6, 12 Bln).</p>
         </div>
 
-        <div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-amber-300 dark:hover:border-amber-800">
-          <div class="w-10 h-10 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center">
-            <FilePlus class="w-5 h-5" />
+        <div class="p-4.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-amber-300 dark:hover:border-amber-800">
+          <div class="w-9 h-9 rounded-2xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 border border-amber-200 dark:border-amber-800/60 flex items-center justify-center">
+            <FilePlus class="w-4.5 h-4.5" />
           </div>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">3. Manajemen Adendum</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Penyesuaian penawaran berjalan untuk tambah modul, tambah user, atau perpanjangan kontrak.</p>
+          <h3 class="text-xs font-extrabold text-slate-900 dark:text-white">3. Manajemen Adendum</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Penyesuaian penawaran untuk modul, user, atau durasi.</p>
         </div>
 
-        <div class="p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-sky-300 dark:hover:border-sky-800">
-          <div class="w-10 h-10 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 flex items-center justify-center">
-            <Printer class="w-5 h-5" />
+        <div class="p-4.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-purple-300 dark:hover:border-purple-800">
+          <div class="w-9 h-9 rounded-2xl bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-800/60 flex items-center justify-center">
+            <FileDown class="w-4.5 h-4.5" />
           </div>
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">4. Cetak PDF Resmi</h3>
-          <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Hasilkan berkas penawaran PDF berkualitas tinggi dengan rincian biaya & klausal garansi.</p>
+          <h3 class="text-xs font-extrabold text-slate-900 dark:text-white">4. Ekspor Laporan</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Unduh rekapitulasi format Excel (.csv) atau Executive PDF.</p>
+        </div>
+
+        <div class="p-4.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-sm space-y-2.5 transition hover:border-sky-300 dark:hover:border-sky-800">
+          <div class="w-9 h-9 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-200 dark:border-sky-800/60 flex items-center justify-center">
+            <Printer class="w-4.5 h-4.5" />
+          </div>
+          <h3 class="text-xs font-extrabold text-slate-900 dark:text-white">5. Cetak PDF Resmi</h3>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">Dokumen PDF resmi penawaran harga siap cetak.</p>
         </div>
       </div>
 
@@ -331,6 +345,18 @@ const faqs = [
                 <h4 class="text-sm font-bold text-slate-900 dark:text-white">Simpan Draft atau Terbitkan Dokumen PDF Resmi</h4>
                 <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                   Simpan sebagai draft untuk diedit kemudian, atau terbitkan penawaran harga resmi dan unduh dokumen PDF siap cetak.
+                </p>
+              </div>
+            </div>
+
+            <div class="flex gap-4 items-start">
+              <div class="w-8 h-8 rounded-xl bg-indigo-600 text-white font-extrabold text-xs flex items-center justify-center shrink-0 shadow-md shadow-indigo-600/30">
+                5
+              </div>
+              <div class="space-y-1">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white">Ekspor Laporan Rekapitulasi (Excel CSV & Executive PDF)</h4>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  Gunakan tombol "Ekspor Laporan" pada halaman Daftar Penawaran atau Dasbor Utama untuk mengunduh rekapitulasi data penawaran dalam format Excel Spreadsheet (.csv) atau Executive PDF Report (.pdf) yang dapat difilter berdasarkan periode waktu, skema kontrak, dan status dokumen.
                 </p>
               </div>
             </div>

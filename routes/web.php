@@ -21,6 +21,8 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    Route::get('/projects/export/csv', [ProjectController::class, 'exportCsv'])->name('projects.export.csv');
+    Route::get('/projects/export/pdf', [ProjectController::class, 'exportPdf'])->name('projects.export.pdf');
     Route::post('/projects/bulk-delete', [ProjectController::class, 'bulkDestroy'])->name('projects.bulk-delete');
     Route::resource('projects', ProjectController::class);
     Route::post('/projects/{project}/addendum', [ProjectController::class, 'createAddendum'])->name('projects.addendum');
