@@ -570,6 +570,19 @@
                         }}
                     </div>
                 </div>
+
+                <!-- FAQ 7 -->
+                <div class="devcalc-faq-item">
+                    <div class="devcalc-faq-title">
+                        {{ app()->getLocale() === 'id' ? '7. Bagaimana ketentuan Garansi Maintenance & SLA Pemeliharaan?' : '7. What are the rules for Maintenance SLA Guarantee?' }}
+                    </div>
+                    <div class="devcalc-faq-text">
+                        {{ app()->getLocale() === 'id' 
+                            ? 'Setiap penawaran (baik Beli Putus maupun Langganan) dilengkapi pilihan Masa Garansi Maintenance (1 Bulan, 3 Bulan Standar SLA, 6 Bulan Extended, atau 12 Bulan Full Year). Garansi ini memberikan jaminan pemeliharaan & perbaikan bug gratis pasca serah terima (Handover & UAT) dan tercantum resmi pada klausul dokumen penawaran PDF.' 
+                            : 'Every quotation (both One-Off and Subscription) includes a customizable Maintenance SLA Guarantee period (1 Month, 3 Months Standard SLA, 6 Months Extended, or 12 Months Full Year). This guarantees free bug fixes & support post-handover, explicitly listed in the PDF agreement terms.' 
+                        }}
+                    </div>
+                </div>
             </div>
         </x-filament::section>
 

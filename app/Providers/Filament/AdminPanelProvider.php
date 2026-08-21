@@ -41,8 +41,12 @@ class AdminPanelProvider extends PanelProvider
                 'danger' => Color::Rose,
             ])
             ->renderHook(
-                'panels::head.done',
+                'panels::head.end',
                 fn () => view('filament.custom-styles')
+            )
+            ->renderHook(
+                'panels::body.end',
+                fn () => view('filament.custom-scripts')
             )
             ->userMenuItems([
                 MenuItem::make()

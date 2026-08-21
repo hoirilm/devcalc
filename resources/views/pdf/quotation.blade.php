@@ -570,6 +570,12 @@
                             </td>
                         </tr>
                     @else
+                        <tr>
+                            <td style="color: #64748b;">Masa Garansi SLA:</td>
+                            <td class="text-right" style="font-weight: bold; color: #059669;">
+                                {{ $project->getMaintenanceMonths() }} Bulan Gratis
+                            </td>
+                        </tr>
                         <tr class="grand-total-row">
                             <td>Total Akhir:</td>
                             <td class="text-right">
@@ -589,13 +595,13 @@
             @if($project->billing_type === 'subscription')
                 <li>Penawaran harga ini berlaku selama 30 (tiga puluh) hari kalender terhitung sejak tanggal dokumen diterbitkan.</li>
                 <li>Biaya langganan ditagihkan di awal setiap siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}), dengan durasi komitmen minimum {{ $project->subscription_duration }} {{ $project->billing_cycle === 'yearly' ? 'tahun' : 'bulan' }}.</li>
-                <li>Layanan mencakup ketersediaan sistem, pemeliharaan rutin, pembaruan keamanan, dan dukungan teknis sesuai standar Service Level Agreement (SLA).</li>
+                <li>Layanan mencakup ketersediaan sistem, pemeliharaan rutin, pembaruan keamanan, dan dukungan teknis garansi SLA selama {{ $project->getMaintenanceMonths() }} bulan awal sesuai kesepakatan.</li>
                 <li>Pembatalan atau penyesuaian paket langganan wajib disampaikan melalui pemberitahuan tertulis sekurang-kurangnya 30 hari kalender sebelum periode tagihan berikutnya berakhir.</li>
             @else
                 <li>Penawaran harga ini berlaku selama 30 (tiga puluh) hari kalender terhitung sejak tanggal dokumen diterbitkan.</li>
                 <li>Lingkup pekerjaan terikat secara ketat pada rincian fitur di atas. Penambahan fitur atau perubahan kebutuhan di luar rincian akan dikenakan biaya terpisah melalui <em>Change Request (CR)</em>.</li>
                 <li>Termin Pembayaran Standar: Uang Muka (DP) 50% saat penandatanganan kontrak, 30% pada tahap Evaluasi Tengah (Mid-Development), dan 20% saat Serah Terima Akhir (UAT & Handover).</li>
-                <li>Estimasi jadwal pengerjaan (timeline) detail akan diberikan setelah persetujuan resmi surat penawaran ini.</li>
+                <li>Garansi Pemeliharaan SLA: Penawaran mencakup garansi pemeliharaan & perbaikan bug gratis selama {{ $project->getMaintenanceMonths() }} bulan pasca Serah Terima Akhir (Handover).</li>
             @endif
         </ol>
     </div>

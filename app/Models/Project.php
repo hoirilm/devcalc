@@ -26,6 +26,7 @@ class Project extends Model
         'user_count',
         'price_per_user',
         'setup_fee',
+        'maintenance_months',
         'addendum_notes',
     ];
 
@@ -37,6 +38,7 @@ class Project extends Model
             'price_per_user' => 'decimal:2',
             'subscription_duration' => 'integer',
             'user_count' => 'integer',
+            'maintenance_months' => 'integer',
             'addendum_number' => 'integer',
         ];
     }
@@ -64,6 +66,11 @@ class Project extends Model
     public function isSubscription(): bool
     {
         return $this->billing_type === 'subscription';
+    }
+
+    public function getMaintenanceMonths(): int
+    {
+        return (int) ($this->maintenance_months ?: 3);
     }
 
     public function isAddendum(): bool

@@ -180,7 +180,20 @@ class ProjectResource extends Resource
                             ->default(0)
                             ->helperText(app()->getLocale() === 'id' ? 'Biaya satu kali saat implementasi awal (opsional).' : 'One-time initial fee (optional).')
                             ->live(onBlur: true)
-                            ->columnSpanFull(),
+                            ->columnSpan(2),
+
+                        Forms\Components\Select::make('maintenance_months')
+                            ->label(app()->getLocale() === 'id' ? 'Masa Garansi Maintenance (SLA)' : 'Maintenance SLA Guarantee')
+                            ->options([
+                                1 => app()->getLocale() === 'id' ? '1 Bulan' : '1 Month',
+                                3 => app()->getLocale() === 'id' ? '3 Bulan (Standar SLA)' : '3 Months (Standard SLA)',
+                                6 => app()->getLocale() === 'id' ? '6 Bulan (Extended SLA)' : '6 Months (Extended SLA)',
+                                12 => app()->getLocale() === 'id' ? '12 Bulan (Full Year SLA)' : '12 Months (Full Year SLA)',
+                            ])
+                            ->default(3)
+                            ->required()
+                            ->helperText(app()->getLocale() === 'id' ? 'Dukungan perbaikan bug gratis pasca serah terima.' : 'Free post-handover bugfix support.')
+                            ->columnSpan(1),
                     ])->columns(3),
 
                 Forms\Components\Section::make(app()->getLocale() === 'id' ? 'Rincian Fitur & Lingkup Kerja' : 'Line Items / Features Scope')
@@ -195,6 +208,12 @@ class ProjectResource extends Resource
                         Forms\Components\Repeater::make('items')
                             ->label(app()->getLocale() === 'id' ? 'Daftar Fitur' : 'Features List')
                             ->relationship('items')
+                            ->extraAttributes(['class' => 'devcalc-repeater-features'])
+                            ->addActionLabel(app()->getLocale() === 'id' ? 'Tambahkan Fitur' : 'Add Feature Item')
+                            ->deleteAction(
+                                fn (\Filament\Forms\Components\Actions\Action $action) => $action
+                                    ->requiresConfirmation(false)
+                            )
                             ->schema([
                                 Forms\Components\Select::make('module_id')
                                     ->label(app()->getLocale() === 'id' ? 'Pilih Template Katalog Modul' : 'Feature Catalog Template')

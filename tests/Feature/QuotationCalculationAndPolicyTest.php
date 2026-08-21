@@ -385,7 +385,26 @@ class QuotationCalculationAndPolicyTest extends TestCase
             ->call('setMode', 'subscription')
             ->assertSet('mode', 'subscription')
             ->call('setMode', 'one_off')
-            ->assertSet('mode', 'one_off');
+            ->assertSet('mode', 'one_off')
+            ->set('maintenanceMonths', 6)
+            ->assertSet('maintenanceMonths', 6);
+    }
+
+    public function test_maintenance_months_sla_guarantee_persistence(): void
+    {
+        $project = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT SLA Maintenance Test',
+            'grand_total' => 5000000.00,
+            'status' => 'Draft',
+            'billing_type' => 'one_off',
+            'maintenance_months' => 6,
+        ]);
+
+        $this->assertEquals(6, $project->getMaintenanceMonths());
+
+        $response = $this->actingAs($this->sales1)->get(route('projects.pdf', $project));
+        $response->assertStatus(200);
     }
 }
 

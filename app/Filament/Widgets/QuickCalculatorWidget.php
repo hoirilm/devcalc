@@ -25,6 +25,7 @@ class QuickCalculatorWidget extends Widget
     public int $userCount = 50;
     public string $pricePerUser = '50.000';
     public int $duration = 12;
+    public int $maintenanceMonths = 3;
 
     public function setMode(string $mode): void
     {
