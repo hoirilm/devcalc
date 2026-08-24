@@ -101,11 +101,13 @@ class Project extends Model
         $itemsTotal = (float) $this->items()->sum('calculated_price');
         $userTotal = ((int) ($this->user_count ?: 0)) * ((float) ($this->price_per_user ?: 0));
 
-        return match ($this->subscription_basis) {
+        $monthlyRecurring = match ($this->subscription_basis) {
             'per_user' => $userTotal,
             'hybrid' => $itemsTotal + $userTotal,
             default => $itemsTotal, // 'modular'
         };
+
+        return $this->billing_cycle === 'yearly' ? ($monthlyRecurring * 12) : $monthlyRecurring;
     }
 
     public function recalculateGrandTotal(): void

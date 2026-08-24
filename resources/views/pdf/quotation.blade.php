@@ -17,15 +17,15 @@
 
         body {
             color: #1e293b;
-            font-size: 11.5px;
+            font-size: 11px;
             line-height: 1.5;
-            padding: 28px;
+            padding: 32px 36px;
             background-color: #ffffff;
         }
 
         .header-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             border-bottom: 2px solid #0f172a;
             padding-bottom: 12px;
         }
@@ -42,14 +42,15 @@
         }
 
         .company-subtitle {
-            font-size: 10.5px;
+            font-size: 9.5px;
+            font-weight: normal;
             color: #64748b;
             margin-top: 2px;
         }
 
         .quotation-title {
             text-align: right;
-            font-size: 17px;
+            font-size: 16px;
             font-weight: bold;
             color: #0f172a;
             text-transform: uppercase;
@@ -58,15 +59,16 @@
 
         .quotation-number {
             text-align: right;
-            font-size: 11.5px;
+            font-size: 13px;
             font-weight: bold;
             color: #2563eb;
-            margin-top: 3px;
+            font-family: monospace;
+            margin-top: 2px;
         }
 
         .meta-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .meta-col {
@@ -76,10 +78,11 @@
 
         .meta-box {
             background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 5px;
-            padding: 10px 14px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 12px 14px;
             margin-right: 8px;
+            min-height: 110px;
         }
 
         .meta-box-right {
@@ -88,51 +91,56 @@
         }
 
         .meta-heading {
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
-            color: #64748b;
+            color: #475569;
             letter-spacing: 0.5px;
-            margin-bottom: 5px;
+            margin-bottom: 6px;
             border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 3px;
+            padding-bottom: 4px;
         }
 
-        .meta-value {
-            font-size: 12.5px;
+        .meta-client-name {
+            font-size: 13px;
             font-weight: bold;
             color: #0f172a;
+            line-height: 1.3;
         }
 
         .meta-sub {
             font-size: 10.5px;
-            color: #64748b;
-            margin-top: 2px;
+            color: #475569;
+            padding: 2px 0;
         }
 
         .status-badge {
             display: inline-block;
             padding: 2px 7px;
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: bold;
             text-transform: uppercase;
-            border-radius: 3px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
         }
 
         .status-draft {
             background-color: #fef3c7;
             color: #92400e;
+            border: 1px solid #fcd34d;
         }
 
         .status-generated {
-            background-color: #dbeafe;
-            color: #1e40af;
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #6ee7b7;
         }
 
+        /* Items Table */
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 18px;
+            margin-bottom: 22px;
             table-layout: fixed;
         }
 
@@ -143,14 +151,14 @@
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            padding: 8px 10px;
+            padding: 9px 12px;
         }
 
         .items-table td {
-            padding: 9px 10px;
+            padding: 9px 12px;
             border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
-            font-size: 11px;
+            font-size: 10.5px;
         }
 
         .items-table tr:nth-child(even) td {
@@ -172,96 +180,107 @@
         .item-title {
             font-weight: bold;
             color: #0f172a;
-            font-size: 11.5px;
+            font-size: 11px;
         }
 
         .item-category {
-            font-size: 9.5px;
+            font-size: 9px;
             color: #64748b;
             margin-top: 1px;
         }
 
         .weight-pill {
             display: inline-block;
-            background-color: #e0f2fe;
-            color: #0369a1;
+            background-color: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
             font-weight: bold;
-            font-size: 10.5px;
-            padding: 2px 6px;
-            border-radius: 3px;
+            font-size: 9.5px;
+            padding: 1px 6px;
+            border-radius: 4px;
         }
 
+        /* Summary Section */
         .summary-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .rate-note-col {
-            width: 55%;
+            width: 52%;
             vertical-align: top;
             padding-right: 12px;
         }
 
         .totals-col {
-            width: 45%;
+            width: 48%;
             vertical-align: top;
         }
 
         .rate-box {
-            background-color: #eff6ff;
-            border: 1px dashed #93c5fd;
-            border-radius: 5px;
-            padding: 9px 12px;
-            font-size: 10.5px;
-            color: #1e40af;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px 12px;
+            font-size: 10px;
+            color: #334155;
+            line-height: 1.5;
         }
 
         .totals-card {
             border: 1px solid #cbd5e1;
-            border-radius: 5px;
+            border-radius: 6px;
             background-color: #f8fafc;
             width: 100%;
             border-collapse: collapse;
+            overflow: hidden;
         }
 
         .totals-card td {
-            padding: 7px 10px;
-            font-size: 11px;
+            padding: 7px 12px;
+            font-size: 10.5px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .totals-card tr:last-child td {
+            border-bottom: none;
         }
 
         .grand-total-row td {
             background-color: #0f172a;
             color: #ffffff;
-            font-size: 13px;
+            font-size: 12.5px;
             font-weight: bold;
+            padding: 9px 12px !important;
         }
 
         .terms-box {
-            margin-top: 12px;
-            padding: 10px 12px;
+            margin-top: 14px;
+            padding: 10px 14px;
             background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 5px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
         }
 
         .terms-title {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
-            color: #334155;
+            color: #0f172a;
             margin-bottom: 4px;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .terms-list {
             padding-left: 14px;
-            font-size: 10px;
-            color: #64748b;
+            font-size: 9.5px;
+            color: #475569;
             line-height: 1.5;
         }
 
         .signature-table {
             width: 100%;
-            margin-top: 25px;
+            margin-top: 30px;
         }
 
         .sig-col {
@@ -275,8 +294,8 @@
         }
 
         .sig-line {
-            border-bottom: 1px solid #475569;
-            margin-top: 45px;
+            border-bottom: 1px solid #0f172a;
+            margin-top: 50px;
             margin-bottom: 4px;
         }
 
@@ -287,23 +306,23 @@
         }
 
         .sig-role {
-            font-size: 9.5px;
+            font-size: 9px;
             color: #64748b;
         }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
+    <!-- Header Table -->
     <table class="header-table">
         <tr>
             <td style="vertical-align: middle;">
                 <div class="company-logo">DEV<span>CALC</span></div>
                 <div class="company-subtitle">Penawaran Harga & Estimasi Rekayasa Perangkat Lunak</div>
             </td>
-            <td style="vertical-align: middle;">
+            <td style="vertical-align: middle; text-align: right;">
                 <div class="quotation-title">
-                    {{ $project->isAddendum() ? 'Surat Penawaran Adendum' : 'Surat Penawaran' }}
+                    {{ $project->isAddendum() ? 'Surat Penawaran Adendum' : 'Surat Penawaran Harga' }}
                 </div>
                 <div class="quotation-number">#{{ $project->getQuotationCode() }}</div>
             </td>
@@ -316,15 +335,18 @@
             <td class="meta-col">
                 <div class="meta-box">
                     <div class="meta-heading">Ditujukan Kepada (Klien)</div>
-                    <div class="meta-value">{{ $project->client_name }}</div>
+                    <div class="meta-client-name">{{ $project->client_name }}</div>
+                    <div style="font-size: 9.5px; color: #64748b; margin-top: 6px;">
+                        Dokumen Resmi Penawaran Pengembangan Perangkat Lunak
+                    </div>
                 </div>
             </td>
             <td class="meta-col">
                 <div class="meta-box meta-box-right">
-                    <div class="meta-heading">Informasi Penawaran</div>
+                    <div class="meta-heading">Informasi Dokumen</div>
                     <table style="width: 100%;">
                         <tr>
-                            <td class="meta-sub">Tanggal:</td>
+                            <td class="meta-sub">Tanggal Terbit:</td>
                             <td class="meta-sub text-right"><strong>{{ $project->created_at->format('d M Y') }}</strong></td>
                         </tr>
                         @if($project->isAddendum() && $project->parent_id)
@@ -354,7 +376,7 @@
                                         @endphp
                                         Langganan ({{ $basisName }} - {{ $cycleName }})
                                     @else
-                                        Putus Kontrak
+                                        Beli Putus (One-Off)
                                     @endif
                                 </strong>
                             </td>
@@ -381,54 +403,54 @@
         </tr>
     </table>
 
+
+
     @if($project->isAddendum() && $project->addendum_notes)
-        <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 9px 13px; margin-bottom: 14px; border-radius: 0 6px 6px 0;">
-            <div style="font-size: 10.5px; font-weight: bold; color: #1e40af; margin-bottom: 3px;">Ruang Lingkup & Penyesuaian Adendum:</div>
+        <div style="background: #f8fafc; border-left: 3px solid #0f172a; padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0; border: 1px solid #cbd5e1;">
+            <div style="font-size: 9.5px; font-weight: bold; color: #0f172a; text-transform: uppercase; margin-bottom: 2px;">Ruang Lingkup & Catatan Adendum:</div>
             <div style="font-size: 9.5px; color: #334155; line-height: 1.4;">{{ $project->addendum_notes }}</div>
         </div>
     @endif
 
     <!-- Line Items Table -->
     <table class="items-table">
-        <colgroup>
-            <col style="width: 5%;">
-            <col style="width: 47%;">
-            <col style="width: 20%;">
-            <col style="width: 8%;">
-            <col style="width: 20%;">
-        </colgroup>
         <thead>
             <tr>
-                <th class="text-center" style="width: 5%;">#</th>
-                <th class="text-left" style="width: 47%;">Deskripsi Fitur / Lingkup Pekerjaan</th>
-                <th class="text-right" style="width: 20%;">Harga Dasar</th>
-                <th class="text-center" style="width: 8%;">Bobot</th>
-                <th class="text-right" style="width: 20%;">
+                <th class="text-center" width="4%" style="width: 4%;">#</th>
+                <th class="text-left" width="58%" style="width: 58%;">Deskripsi Fitur / Lingkup Pekerjaan</th>
+                <th class="text-right" width="15%" style="width: 15%;">Harga Dasar</th>
+                <th class="text-center" width="7%" style="width: 7%;">Bobot</th>
+                <th class="text-right" width="16%" style="width: 16%;">
                     {{ $project->billing_type === 'subscription' ? 'Biaya / Siklus' : 'Harga Terhitung' }}
                 </th>
             </tr>
         </thead>
         <tbody>
             @if($project->billing_type === 'subscription' && $project->subscription_basis === 'per_user')
+                @php
+                    $cycleMultiplier = $project->billing_cycle === 'yearly' ? 12 : 1;
+                    $userCycleRate = $project->price_per_user * $cycleMultiplier;
+                    $userTotalCycle = $project->user_count * $userCycleRate;
+                @endphp
                 <!-- Primary User License Row -->
                 <tr style="background-color: #f8fafc;">
-                    <td class="text-center" style="font-weight: bold; color: #2563eb;">1</td>
+                    <td class="text-center" style="font-weight: bold; color: #0f172a;">1</td>
                     <td class="text-left">
-                        <div class="item-title" style="font-weight: bold; color: #1e3a8a;">
+                        <div class="item-title" style="color: #0f172a;">
                             Paket Lisensi Kapasitas Pengguna ({{ $project->user_count }} Pengguna Aktif)
                         </div>
-                        <div class="item-category" style="color: #64748b;">
-                            Akses sistem, pemeliharaan & infrastruktur cloud (@ {{ \Illuminate\Support\Number::currency($project->price_per_user, 'IDR', 'id') }} / user / {{ $project->billing_cycle === 'yearly' ? 'th' : 'bln' }})
+                        <div class="item-category">
+                            Akses sistem, pemeliharaan & infrastruktur cloud (@ {{ \Illuminate\Support\Number::currency($userCycleRate, 'IDR', 'id') }} / user / {{ $project->billing_cycle === 'yearly' ? 'th' : 'bln' }})
                         </div>
                     </td>
                     <td class="text-right">
-                        {{ \Illuminate\Support\Number::currency($project->price_per_user, 'IDR', 'id') }}
+                        {{ \Illuminate\Support\Number::currency($userCycleRate, 'IDR', 'id') }}
                     </td>
                     <td class="text-center">
-                        <span class="weight-pill" style="font-size: 8.5px;">{{ $project->user_count }} user</span>
+                        <span class="weight-pill">{{ $project->user_count }} user</span>
                     </td>
                     <td class="text-right" style="font-weight: bold; color: #0f172a;">
-                        {{ \Illuminate\Support\Number::currency($project->user_count * $project->price_per_user, 'IDR', 'id') }}
+                        {{ \Illuminate\Support\Number::currency($userTotalCycle, 'IDR', 'id') }}
                     </td>
                 </tr>
 
@@ -442,13 +464,13 @@
                                 <div class="item-category">{{ $item->module->category }}</div>
                             @endif
                         </td>
-                        <td class="text-right" style="color: #64748b; font-size: 11px;">
+                        <td class="text-right" style="color: #64748b; font-size: 10px;">
                             Termasuk
                         </td>
                         <td class="text-center">
                             <span class="weight-pill">{{ number_format($item->complexity_weight, 2) }}x</span>
                         </td>
-                        <td class="text-right" style="font-weight: bold; color: #0f172a; font-size: 11px;">
+                        <td class="text-right" style="font-weight: bold; color: #0f172a; font-size: 10px;">
                             Rp 0 (Termasuk)
                         </td>
                     </tr>
@@ -490,23 +512,29 @@
             <td class="rate-note-col">
                 <div class="rate-box">
                     @if($project->billing_type === 'subscription')
-                        <strong>Ketentuan Skema Berlangganan (SaaS / Retainer):</strong><br>
+                        <strong style="text-transform: uppercase; font-size: 9px; color: #0f172a;">Ketentuan Skema Berlangganan (SaaS):</strong><br>
                         @if($project->subscription_basis === 'per_user')
-                            Tagihan dihitung berdasarkan jumlah kapasitas pengguna aktif ({{ $project->user_count }} User) per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}).
+                            Tagihan dihitung berdasarkan kapasitas pengguna aktif ({{ $project->user_count }} User) per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}).
                         @elseif($project->subscription_basis === 'hybrid')
-                            Tagihan menggabungkan biaya sewa infrastruktur fitur modul dan kuota pengguna aktif ({{ $project->user_count }} User) per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}).
+                            Tagihan menggabungkan sewa infrastruktur fitur modul dan kuota pengguna aktif ({{ $project->user_count }} User) per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}).
                         @else
-                            Biaya modul dihitung per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}), mencakup infrastruktur, pemeliharaan rutin, dan dukungan teknis.
+                            Biaya modul dihitung per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}), mencakup server & maintenance rutin.
                         @endif
-                        <br>
                     @else
-                        <strong>Ketentuan Perhitungan Standar:</strong><br>
-                        Harga dihitung berdasarkan harga dasar modul dikalikan dengan bobot kompleksitas pengerjaan.<br>
+                        <strong style="text-transform: uppercase; font-size: 9px; color: #0f172a;">Ketentuan Perhitungan Standar:</strong><br>
+                        Harga dihitung dari harga dasar modul dikalikan bobot kompleksitas pengerjaan.
                     @endif
-                    <span style="font-size: 10px; color: #3b82f6;">
+                    <div style="font-size: 9px; color: #64748b; margin-top: 4px;">
                         * Seluruh nominal penawaran diterbitkan dalam mata uang Rupiah (Rp).
-                    </span>
+                    </div>
                 </div>
+
+                @if($project->notes)
+                    <div class="rate-box" style="margin-top: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 3px solid #0f172a; color: #1e293b;">
+                        <strong style="text-transform: uppercase; font-size: 9px; color: #0f172a;">Catatan Penawaran / Scope Notes:</strong><br>
+                        <div style="font-size: 9.5px; color: #334155; margin-top: 3px; line-height: 1.4;">{{ $project->notes }}</div>
+                    </div>
+                @endif
             </td>
             <td class="totals-col">
                 <table class="totals-card">
@@ -521,8 +549,9 @@
                     @if($project->billing_type === 'subscription')
                         @php
                             $cycleUnit = $project->billing_cycle === 'yearly' ? 'th' : 'bln';
-                            $itemsSum = (float) $project->items->sum('calculated_price');
-                            $userSum = ((int) $project->user_count) * ((float) $project->price_per_user);
+                            $multiplier = $project->billing_cycle === 'yearly' ? 12 : 1;
+                            $itemsSum = ((float) $project->items->sum('calculated_price')) * $multiplier;
+                            $userSum = (((int) $project->user_count) * ((float) $project->price_per_user)) * $multiplier;
                         @endphp
 
                         @if(in_array($project->subscription_basis, ['modular', 'hybrid']))
@@ -536,7 +565,7 @@
 
                         @if(in_array($project->subscription_basis, ['per_user', 'hybrid']))
                             <tr>
-                                <td style="color: #64748b;">Biaya Pengguna:</td>
+                                <td style="color: #64748b;">Biaya Pengguna ({{ $project->user_count }} User):</td>
                                 <td class="text-right" style="font-weight: bold;">
                                     {{ \Illuminate\Support\Number::currency($userSum, 'IDR', 'id') }} / {{ $cycleUnit }}
                                 </td>
@@ -572,7 +601,7 @@
                     @else
                         <tr>
                             <td style="color: #64748b;">Masa Garansi SLA:</td>
-                            <td class="text-right" style="font-weight: bold; color: #059669;">
+                            <td class="text-right" style="font-weight: bold; color: #047857;">
                                 {{ $project->getMaintenanceMonths() }} Bulan Gratis
                             </td>
                         </tr>
@@ -588,6 +617,8 @@
         </tr>
     </table>
 
+
+
     <!-- Terms and Conditions -->
     <div class="terms-box">
         <div class="terms-title">Syarat & Ketentuan</div>
@@ -596,7 +627,7 @@
                 <li>Penawaran harga ini berlaku selama 30 (tiga puluh) hari kalender terhitung sejak tanggal dokumen diterbitkan.</li>
                 <li>Biaya langganan ditagihkan di awal setiap siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}), dengan durasi komitmen minimum {{ $project->subscription_duration }} {{ $project->billing_cycle === 'yearly' ? 'tahun' : 'bulan' }}.</li>
                 <li>Layanan mencakup ketersediaan sistem, pemeliharaan rutin, pembaruan keamanan, dan dukungan teknis garansi SLA selama {{ $project->getMaintenanceMonths() }} bulan awal sesuai kesepakatan.</li>
-                <li>Pembatalan atau penyesuaian paket langganan wajib disampaikan melalui pemberitahuan tertulis sekurang-kurangnya 30 hari kalender sebelum periode tagihan berikutnya berakhir.</li>
+                <li>Pembatalan atau penyesuaian paket langganan wajib disampaikan melalui pemberitahuan tertulis sekurang-kurangnya 30 hari kalender sebelum periode tagihan berakhir.</li>
             @else
                 <li>Penawaran harga ini berlaku selama 30 (tiga puluh) hari kalender terhitung sejak tanggal dokumen diterbitkan.</li>
                 <li>Lingkup pekerjaan terikat secara ketat pada rincian fitur di atas. Penambahan fitur atau perubahan kebutuhan di luar rincian akan dikenakan biaya terpisah melalui <em>Change Request (CR)</em>.</li>
@@ -610,14 +641,14 @@
     <table class="signature-table">
         <tr>
             <td class="sig-col">
-                <div style="font-size: 10px; color: #64748b; margin-bottom: 4px;">Diajukan Oleh:</div>
+                <div style="font-size: 9.5px; color: #64748b; margin-bottom: 4px;">Diajukan Oleh:</div>
                 <div class="sig-line"></div>
                 <div class="sig-name">{{ $project->user->name ?? 'Sales Representative' }}</div>
                 <div class="sig-role">Solution Architect / Estimator DevCalc</div>
             </td>
             <td class="sig-spacer"></td>
             <td class="sig-col">
-                <div style="font-size: 10px; color: #64748b; margin-bottom: 4px;">Disetujui & Diterima Oleh Klien:</div>
+                <div style="font-size: 9.5px; color: #64748b; margin-bottom: 4px;">Disetujui & Diterima Oleh Klien:</div>
                 <div class="sig-line"></div>
                 <div class="sig-name">{{ $project->client_name }}</div>
                 <div class="sig-role">Tanda Tangan & Cap Perusahaan</div>

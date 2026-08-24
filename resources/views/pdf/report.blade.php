@@ -19,29 +19,30 @@
             color: #1e293b;
             font-size: 11px;
             line-height: 1.5;
-            padding: 28px;
+            padding: 32px 36px;
             background-color: #ffffff;
         }
 
         .header-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
             border-bottom: 2px solid #0f172a;
             padding-bottom: 12px;
         }
 
         .company-logo {
-            font-size: 20px;
+            font-size: 22px;
             font-weight: bold;
             color: #0f172a;
+            letter-spacing: -0.5px;
         }
 
         .company-logo span {
-            color: #4f46e5;
+            color: #2563eb;
         }
 
         .company-subtitle {
-            font-size: 10px;
+            font-size: 9.5px;
             color: #64748b;
             margin-top: 2px;
         }
@@ -52,42 +53,45 @@
             font-weight: bold;
             color: #0f172a;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .report-meta {
             text-align: right;
             font-size: 10px;
             color: #475569;
+            margin-top: 2px;
         }
 
         /* KPI Summary Strip */
         .kpi-table {
             width: 100%;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
             border-collapse: separate;
-            border-spacing: 10px 0;
+            border-spacing: 8px 0;
         }
 
         .kpi-card {
             background-color: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
             padding: 10px 12px;
             text-align: center;
         }
 
         .kpi-label {
-            font-size: 9.5px;
+            font-size: 9px;
             font-weight: bold;
-            color: #64748b;
+            color: #475569;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .kpi-value {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #0f172a;
-            margin-top: 4px;
+            margin-top: 3px;
         }
 
         /* Projects List Table */
@@ -95,22 +99,24 @@
             width: 100%;
             border-collapse: collapse;
             margin-top: 10px;
+            table-layout: fixed;
         }
 
         .data-table th {
             background-color: #0f172a;
             color: #ffffff;
-            font-size: 9.5px;
+            font-size: 8.5px;
             font-weight: bold;
             text-transform: uppercase;
-            padding: 8px 10px;
+            letter-spacing: 0.3px;
+            padding: 8px 6px;
             text-align: left;
         }
 
         .data-table td {
-            padding: 8px 10px;
+            padding: 8px 6px;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 10.5px;
+            font-size: 10px;
         }
 
         .data-table tr:nth-child(even) {
@@ -142,14 +148,14 @@
     <!-- Header Table -->
     <table class="header-table">
         <tr>
-            <td style="vertical-align: top; width: 50%;">
-                <div class="company-logo">Dev<span>Calc</span></div>
-                <div class="company-subtitle">Software Quotation Estimator System</div>
+            <td style="vertical-align: middle; width: 50%;">
+                <div class="company-logo">DEV<span>CALC</span></div>
+                <div class="company-subtitle">Penawaran Harga & Estimasi Rekayasa Perangkat Lunak</div>
             </td>
-            <td style="vertical-align: top; text-align: right; width: 50%;">
+            <td style="vertical-align: middle; text-align: right; width: 50%;">
                 <div class="report-title">Laporan Rekapitulasi Penawaran</div>
-                <div class="report-meta">Tanggal Cetak: {{ date('d F Y') }}</div>
-                <div class="report-meta">Dicetak Oleh: {{ auth()->user()->name ?? 'Administrator' }}</div>
+                <div class="report-meta">Tanggal Cetak: <strong>{{ date('d F Y') }}</strong></div>
+                <div class="report-meta">Dicetak Oleh: <strong>{{ auth()->user()->name ?? 'Administrator' }}</strong></div>
             </td>
         </tr>
     </table>
@@ -166,12 +172,12 @@
                 <div class="kpi-value">Rp {{ number_format($summary['total_value'], 0, ',', '.') }}</div>
             </td>
             <td class="kpi-card" style="width: 25%;">
-                <div class="kpi-label">Beli Putus (One-Off)</div>
-                <div class="kpi-value">{{ $summary['one_off_count'] }} Doc</div>
+                <div class="kpi-label">Putus Kontrak</div>
+                <div class="kpi-value">{{ $summary['one_off_count'] }} Dokumen</div>
             </td>
             <td class="kpi-card" style="width: 25%;">
                 <div class="kpi-label">Langganan SaaS</div>
-                <div class="kpi-value">{{ $summary['subscription_count'] }} Doc</div>
+                <div class="kpi-value">{{ $summary['subscription_count'] }} Dokumen</div>
             </td>
         </tr>
     </table>
@@ -180,13 +186,13 @@
     <table class="data-table">
         <thead>
             <tr>
-                <th style="width: 5%;">No</th>
-                <th style="width: 16%;">No. Penawaran</th>
-                <th style="width: 25%;">Nama Klien</th>
-                <th style="width: 18%;">Skema Pembayaran</th>
-                <th style="width: 16%;">Nilai Penawaran</th>
-                <th style="width: 10%;">Estimator</th>
-                <th style="width: 10%;">Tanggal</th>
+                <th width="4%" style="width: 4%;">No</th>
+                <th width="13%" style="width: 13%;">No. Penawaran</th>
+                <th width="28.5%" style="width: 28.5%;">Nama Klien</th>
+                <th width="17%" style="width: 17%;">Skema Pembayaran</th>
+                <th width="15.5%" style="width: 15.5%; text-align: right;">Nilai Penawaran</th>
+                <th width="13%" style="width: 13%;">Estimator</th>
+                <th width="9%" style="width: 9%;">Tanggal</th>
             </tr>
         </thead>
         <tbody>
@@ -202,12 +208,19 @@
                     </td>
                     <td>
                         @if($item->billing_type === 'subscription')
-                            <span class="badge-subscription">SaaS ({{ $item->subscription_basis }})</span>
+                            @php
+                                $basisLabel = match($item->subscription_basis) {
+                                    'per_user' => 'Per-User',
+                                    'hybrid' => 'Hybrid',
+                                    default => 'Modular'
+                                };
+                            @endphp
+                            <span class="badge-subscription">Langganan ({{ $basisLabel }})</span>
                         @else
-                            <span class="badge-one-off">Beli Putus (One-Off)</span>
+                            <span class="badge-one-off">Putus Kontrak</span>
                         @endif
                     </td>
-                    <td style="font-weight: bold;">Rp {{ number_format($item->grand_total, 0, ',', '.') }}</td>
+                    <td style="font-weight: bold; text-align: right; white-space: nowrap;">Rp&nbsp;{{ number_format($item->grand_total, 0, ',', '.') }}</td>
                     <td>{{ $item->user ? $item->user->name : 'System' }}</td>
                     <td>{{ $item->created_at ? $item->created_at->format('d/m/Y') : '-' }}</td>
                 </tr>

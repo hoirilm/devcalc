@@ -93,7 +93,7 @@ class ProjectController extends Controller
             'user_count' => 'required_if:subscription_basis,per_user,hybrid|integer|min:1',
             'price_per_user' => 'required_if:subscription_basis,per_user,hybrid|numeric|min:0',
             'setup_fee' => 'nullable|numeric|min:0',
-            'maintenance_months' => 'required|integer|in:1,3,6,12',
+            'maintenance_months' => 'required_if:billing_type,one_off|nullable|integer',
             'status' => 'required|in:Draft,Generated',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -113,7 +113,7 @@ class ProjectController extends Controller
         $project->user_count = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (int) $validated['user_count'] : 1;
         $project->price_per_user = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (float) $validated['price_per_user'] : 0.0;
         $project->setup_fee = (float) ($validated['setup_fee'] ?? 0);
-        $project->maintenance_months = (int) $validated['maintenance_months'];
+        $project->maintenance_months = $validated['billing_type'] === 'subscription' ? (int) ($validated['subscription_duration'] ?? 12) : (int) ($validated['maintenance_months'] ?? 3);
         $project->status = $validated['status'];
         $project->quotation_type = 'standard';
         $project->notes = $validated['notes'] ?? null;
@@ -183,7 +183,7 @@ class ProjectController extends Controller
             'user_count' => 'required_if:subscription_basis,per_user,hybrid|integer|min:1',
             'price_per_user' => 'required_if:subscription_basis,per_user,hybrid|numeric|min:0',
             'setup_fee' => 'nullable|numeric|min:0',
-            'maintenance_months' => 'required|integer|in:1,3,6,12',
+            'maintenance_months' => 'required_if:billing_type,one_off|nullable|integer',
             'status' => 'required|in:Draft,Generated',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -201,7 +201,7 @@ class ProjectController extends Controller
         $project->user_count = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (int) $validated['user_count'] : 1;
         $project->price_per_user = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (float) $validated['price_per_user'] : 0.0;
         $project->setup_fee = (float) ($validated['setup_fee'] ?? 0);
-        $project->maintenance_months = (int) $validated['maintenance_months'];
+        $project->maintenance_months = $validated['billing_type'] === 'subscription' ? (int) ($validated['subscription_duration'] ?? 12) : (int) ($validated['maintenance_months'] ?? 3);
         $project->status = $validated['status'];
         $project->notes = $validated['notes'] ?? null;
         $project->save();

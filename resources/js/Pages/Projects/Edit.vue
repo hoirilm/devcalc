@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from 'vue';
+import { ref, computed, nextTick, watch } from 'vue';
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/Layouts/AppLayout.vue';
 import CurrencyInput from '@/Components/CurrencyInput.vue';
@@ -95,9 +95,17 @@ const itemsTotal = computed(() => {
 
 const userRecurringTotal = computed(() => {
   if (form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid') {
-    return Math.round((form.user_count || 0) * (form.price_per_user || 0));
+    const monthly = Math.round((form.user_count || 0) * (form.price_per_user || 0));
+    return form.billing_cycle === 'yearly' ? monthly * 12 : monthly;
   }
   return 0;
+});
+
+const itemsRecurringTotal = computed(() => {
+  if (form.billing_type === 'subscription' && form.billing_cycle === 'yearly') {
+    return itemsTotal.value * 12;
+  }
+  return itemsTotal.value;
 });
 
 const recurringPerCycle = computed(() => {
@@ -105,9 +113,9 @@ const recurringPerCycle = computed(() => {
     return userRecurringTotal.value;
   }
   if (form.subscription_basis === 'hybrid') {
-    return itemsTotal.value + userRecurringTotal.value;
+    return itemsRecurringTotal.value + userRecurringTotal.value;
   }
-  return itemsTotal.value; // modular
+  return itemsRecurringTotal.value; // modular
 });
 
 const calculatedGrandTotal = computed(() => {
@@ -118,6 +126,13 @@ const calculatedGrandTotal = computed(() => {
   }
   return itemsTotal.value;
 });
+
+watch([() => form.billing_type, () => form.subscription_duration, () => form.billing_cycle], () => {
+  if (form.billing_type === 'subscription') {
+    const dur = form.subscription_duration || 1;
+    form.maintenance_months = form.billing_cycle === 'yearly' ? dur * 12 : dur;
+  }
+}, { immediate: true });
 
 function formatRupiah(num) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
@@ -218,7 +233,7 @@ function submit(targetStatus) {
               </div>
 
               <!-- Maintenance SLA -->
-              <div class="space-y-1.5">
+              <div v-if="form.billing_type === 'one_off'" class="space-y-1.5">
                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA) *</label>
                 <select v-model.number="form.maintenance_months" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white transition cursor-pointer">
                   <option :value="1">1 Bulan</option>
@@ -226,6 +241,13 @@ function submit(targetStatus) {
                   <option :value="6">6 Bulan (Extended SLA)</option>
                   <option :value="12">12 Bulan (Full Year SLA)</option>
                 </select>
+              </div>
+              <div v-else class="space-y-1.5">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA)</label>
+                <div class="px-3.5 py-2.5 text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 rounded-xl text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                  <ShieldCheck class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Otomatis Cakupan Penuh Selama Masa SaaS Aktif</span>
+                </div>
               </div>
 
               <!-- Notes Input -->
@@ -419,18 +441,19 @@ function submit(targetStatus) {
             <div class="space-y-2.5 pt-2 text-xs border-t border-slate-200 dark:border-slate-800">
               <div class="flex justify-between items-center text-slate-600 dark:text-slate-300">
                 <span class="text-slate-500 dark:text-slate-400">Fitur & Modul ({{ form.items.length }} Item):</span>
-                <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(itemsTotal) }}</span>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400" v-if="form.billing_type === 'subscription' && form.subscription_basis === 'per_user'">Termasuk Paket Lisensi</span>
+                <span class="font-bold text-slate-900 dark:text-white" v-else>{{ formatRupiah(itemsTotal) }}</span>
               </div>
 
               <template v-if="form.billing_type === 'subscription'">
                 <div v-if="form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid'" class="flex justify-between items-center text-slate-600 dark:text-slate-300">
                   <span class="text-slate-500 dark:text-slate-400">Lisensi ({{ form.user_count }} User):</span>
-                  <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(userRecurringTotal) }}</span>
+                  <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(userRecurringTotal) }} / {{ form.billing_cycle === 'yearly' ? 'thn' : 'bln' }}</span>
                 </div>
 
                 <div class="flex justify-between items-center text-indigo-600 dark:text-indigo-300 font-semibold pt-1">
                   <span>Biaya Berulang ({{ form.billing_cycle === 'yearly' ? 'Tahunan' : 'Bulanan' }}):</span>
-                  <span class="font-black text-slate-900 dark:text-white">{{ formatRupiah(recurringPerCycle) }}</span>
+                  <span class="font-black text-slate-900 dark:text-white">{{ formatRupiah(recurringPerCycle) }} / {{ form.billing_cycle === 'yearly' ? 'thn' : 'bln' }}</span>
                 </div>
 
                 <div v-if="form.setup_fee > 0" class="flex justify-between items-center text-slate-600 dark:text-slate-300">
@@ -449,7 +472,9 @@ function submit(targetStatus) {
                   <ShieldCheck class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                   <span>Garansi SLA:</span>
                 </span>
-                <span class="font-bold text-emerald-600 dark:text-emerald-400">{{ form.maintenance_months }} Bulan</span>
+                <span class="font-bold text-emerald-600 dark:text-emerald-400">
+                  {{ form.billing_type === 'subscription' ? (form.subscription_duration + ' ' + (form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan')) : (form.maintenance_months + ' Bulan Gratis') }}
+                </span>
               </div>
             </div>
 
