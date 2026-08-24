@@ -113,6 +113,13 @@ function getUserInitial(name) {
   if (!name) return 'U';
   return name.charAt(0).toUpperCase();
 }
+
+const userRoleName = computed(() => {
+  const role = user.value?.roles?.[0];
+  if (role === 'Admin') return 'Administrator';
+  if (role === 'Sales') return 'Sales Estimator';
+  return role || user.value?.email || 'Estimator';
+});
 </script>
 
 <template>
@@ -246,7 +253,7 @@ function getUserInitial(name) {
                 {{ user?.name || 'Administrator' }}
               </div>
               <div class="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold truncate">
-                Sales Estimator
+                {{ userRoleName }}
               </div>
             </div>
           </div>
