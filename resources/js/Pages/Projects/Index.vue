@@ -267,9 +267,10 @@ function confirmBulkDelete() {
             />
             <button
               v-if="search"
+              type="button"
               @click="clearSearch"
               title="Bersihkan Pencarian"
-              class="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition"
+              class="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition cursor-pointer z-10"
             >
               <X class="w-3.5 h-3.5" />
             </button>
@@ -511,6 +512,9 @@ function confirmBulkDelete() {
                   <div>
                     <div class="font-bold text-slate-900 dark:text-white text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition leading-snug">
                       {{ formatClientName(item.client_name) }}
+                    </div>
+                    <div v-if="item.project_category" class="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                      {{ item.project_category }}
                     </div>
                     <div class="text-[11px] font-mono text-indigo-600 dark:text-indigo-400 mt-0.5 flex items-center gap-1.5">
                       <span>#{{ item.code }}</span>

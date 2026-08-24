@@ -42,6 +42,8 @@ class ProjectController extends Controller
                 'id' => $project->id,
                 'code' => $project->getQuotationCode(),
                 'client_name' => $project->client_name,
+                'project_category' => $project->project_category,
+                'estimated_timeline' => $project->estimated_timeline,
                 'estimator_name' => $project->user->name ?? 'System',
                 'grand_total' => (float) $project->grand_total,
                 'grand_total_formatted' => 'Rp ' . number_format($project->grand_total, 0, ',', '.'),
@@ -75,7 +77,7 @@ class ProjectController extends Controller
 
     public function create(): Response
     {
-        $modules = Module::query()->select('id', 'name', 'base_price', 'subscription_price', 'category')->get();
+        $modules = Module::query()->select('id', 'name', 'base_price', 'subscription_price', 'category', 'description')->get();
 
         return Inertia::render('Projects/Create', [
             'modules' => $modules,
@@ -86,9 +88,13 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'client_name' => 'required|string|max:255',
+            'project_category' => 'nullable|string|max:255',
+            'estimated_timeline' => 'nullable|string|max:255',
             'billing_type' => 'required|in:one_off,subscription',
             'subscription_basis' => 'required_if:billing_type,subscription|in:modular,per_user,hybrid',
             'billing_cycle' => 'required_if:billing_type,subscription|in:monthly,yearly',
+            'apply_annual_discount' => 'nullable|boolean',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'subscription_duration' => 'required_if:billing_type,subscription|integer|min:1',
             'user_count' => 'required_if:subscription_basis,per_user,hybrid|integer|min:1',
             'price_per_user' => 'required_if:subscription_basis,per_user,hybrid|numeric|min:0',
@@ -106,9 +112,13 @@ class ProjectController extends Controller
         $project = new Project();
         $project->user_id = auth()->id() ?? 1;
         $project->client_name = $validated['client_name'];
+        $project->project_category = $validated['project_category'] ?? null;
+        $project->estimated_timeline = $validated['estimated_timeline'] ?? null;
         $project->billing_type = $validated['billing_type'];
         $project->subscription_basis = $validated['billing_type'] === 'subscription' ? $validated['subscription_basis'] : 'modular';
         $project->billing_cycle = $validated['billing_type'] === 'subscription' ? $validated['billing_cycle'] : 'monthly';
+        $project->apply_annual_discount = (bool) ($validated['apply_annual_discount'] ?? false);
+        $project->discount_percentage = (float) ($validated['discount_percentage'] ?? 20.00);
         $project->subscription_duration = $validated['billing_type'] === 'subscription' ? (int) $validated['subscription_duration'] : 1;
         $project->user_count = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (int) $validated['user_count'] : 1;
         $project->price_per_user = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (float) $validated['price_per_user'] : 0.0;
@@ -142,16 +152,20 @@ class ProjectController extends Controller
     public function edit(Project $project): Response
     {
         $project->load(['items']);
-        $modules = Module::query()->select('id', 'name', 'base_price', 'subscription_price', 'category')->get();
+        $modules = Module::query()->select('id', 'name', 'base_price', 'subscription_price', 'category', 'description')->get();
 
         return Inertia::render('Projects/Edit', [
             'project' => [
                 'id' => $project->id,
                 'code' => $project->getQuotationCode(),
                 'client_name' => $project->client_name,
+                'project_category' => $project->project_category,
+                'estimated_timeline' => $project->estimated_timeline,
                 'billing_type' => $project->billing_type,
                 'subscription_basis' => $project->subscription_basis ?? 'modular',
                 'billing_cycle' => $project->billing_cycle ?? 'monthly',
+                'apply_annual_discount' => (bool) $project->apply_annual_discount,
+                'discount_percentage' => (float) ($project->discount_percentage ?? 20.00),
                 'subscription_duration' => (int) ($project->subscription_duration ?? 1),
                 'user_count' => (int) ($project->user_count ?? 1),
                 'price_per_user' => (float) ($project->price_per_user ?? 0),
@@ -176,9 +190,13 @@ class ProjectController extends Controller
     {
         $validated = $request->validate([
             'client_name' => 'required|string|max:255',
+            'project_category' => 'nullable|string|max:255',
+            'estimated_timeline' => 'nullable|string|max:255',
             'billing_type' => 'required|in:one_off,subscription',
             'subscription_basis' => 'required_if:billing_type,subscription|in:modular,per_user,hybrid',
             'billing_cycle' => 'required_if:billing_type,subscription|in:monthly,yearly',
+            'apply_annual_discount' => 'nullable|boolean',
+            'discount_percentage' => 'nullable|numeric|min:0|max:100',
             'subscription_duration' => 'required_if:billing_type,subscription|integer|min:1',
             'user_count' => 'required_if:subscription_basis,per_user,hybrid|integer|min:1',
             'price_per_user' => 'required_if:subscription_basis,per_user,hybrid|numeric|min:0',
@@ -194,9 +212,13 @@ class ProjectController extends Controller
         ]);
 
         $project->client_name = $validated['client_name'];
+        $project->project_category = $validated['project_category'] ?? null;
+        $project->estimated_timeline = $validated['estimated_timeline'] ?? null;
         $project->billing_type = $validated['billing_type'];
         $project->subscription_basis = $validated['billing_type'] === 'subscription' ? $validated['subscription_basis'] : 'modular';
         $project->billing_cycle = $validated['billing_type'] === 'subscription' ? $validated['billing_cycle'] : 'monthly';
+        $project->apply_annual_discount = (bool) ($validated['apply_annual_discount'] ?? false);
+        $project->discount_percentage = (float) ($validated['discount_percentage'] ?? 20.00);
         $project->subscription_duration = $validated['billing_type'] === 'subscription' ? (int) $validated['subscription_duration'] : 1;
         $project->user_count = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (int) $validated['user_count'] : 1;
         $project->price_per_user = in_array($validated['subscription_basis'] ?? '', ['per_user', 'hybrid']) ? (float) $validated['price_per_user'] : 0.0;

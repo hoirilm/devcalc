@@ -17,11 +17,15 @@ class Project extends Model
         'addendum_number',
         'user_id',
         'client_name',
+        'project_category',
+        'estimated_timeline',
         'grand_total',
         'status',
         'billing_type',
         'subscription_basis',
         'billing_cycle',
+        'apply_annual_discount',
+        'discount_percentage',
         'subscription_duration',
         'user_count',
         'price_per_user',
@@ -37,6 +41,8 @@ class Project extends Model
             'grand_total' => 'decimal:2',
             'setup_fee' => 'decimal:2',
             'price_per_user' => 'decimal:2',
+            'apply_annual_discount' => 'boolean',
+            'discount_percentage' => 'decimal:2',
             'subscription_duration' => 'integer',
             'user_count' => 'integer',
             'maintenance_months' => 'integer',
@@ -96,18 +102,44 @@ class Project extends Model
         return $max + 1;
     }
 
-    public function getRecurringPerCycle(): float
+    public function getBaseMonthlyRecurring(): float
     {
         $itemsTotal = (float) $this->items()->sum('calculated_price');
         $userTotal = ((int) ($this->user_count ?: 0)) * ((float) ($this->price_per_user ?: 0));
 
-        $monthlyRecurring = match ($this->subscription_basis) {
+        return match ($this->subscription_basis) {
             'per_user' => $userTotal,
             'hybrid' => $itemsTotal + $userTotal,
             default => $itemsTotal, // 'modular'
         };
+    }
 
-        return $this->billing_cycle === 'yearly' ? ($monthlyRecurring * 12) : $monthlyRecurring;
+    public function getRecurringPerCycle(): float
+    {
+        $monthlyRecurring = $this->getBaseMonthlyRecurring();
+
+        if ($this->billing_cycle === 'yearly') {
+            $yearlyFull = $monthlyRecurring * 12;
+            if ($this->apply_annual_discount) {
+                $pct = (float) ($this->discount_percentage ?: 20.00);
+                return round($yearlyFull * (1 - ($pct / 100)), 2);
+            }
+            return $yearlyFull;
+        }
+
+        return $monthlyRecurring;
+    }
+
+    public function getAnnualSavings(): float
+    {
+        if ($this->billing_cycle !== 'yearly' || !$this->apply_annual_discount) {
+            return 0.0;
+        }
+
+        $yearlyFull = $this->getBaseMonthlyRecurring() * 12;
+        $pct = (float) ($this->discount_percentage ?: 20.00);
+
+        return round($yearlyFull * ($pct / 100), 2);
     }
 
     public function recalculateGrandTotal(): void

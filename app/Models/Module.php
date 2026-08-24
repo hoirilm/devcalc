@@ -15,6 +15,7 @@ class Module extends Model
         'base_price',
         'subscription_price',
         'category',
+        'description',
     ];
 
     protected function casts(): array

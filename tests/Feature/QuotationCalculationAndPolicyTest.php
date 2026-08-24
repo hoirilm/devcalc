@@ -402,6 +402,95 @@ class QuotationCalculationAndPolicyTest extends TestCase
         $response->assertStatus(200);
         $response->assertHeader('content-type', 'application/pdf');
     }
+
+    public function test_annual_discount_calculation_when_applied_and_not_applied(): void
+    {
+        $projectWithDiscount = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT Annual Discount Client',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'modular',
+            'billing_cycle' => 'yearly',
+            'apply_annual_discount' => true,
+            'discount_percentage' => 20.00,
+            'subscription_duration' => 1,
+            'setup_fee' => 0.00,
+            'status' => 'Generated',
+        ]);
+
+        ProjectItem::create([
+            'project_id' => $projectWithDiscount->id,
+            'item_name' => 'Core Module',
+            'base_price' => 1000000.00,
+            'complexity_weight' => 1.0,
+            'calculated_price' => 1000000.00,
+        ]);
+
+        $projectWithDiscount->recalculateGrandTotal();
+
+        // Monthly = 1,000,000. Yearly full = 12,000,000. 20% off = 9,600,000. Savings = 2,400,000.
+        $this->assertEquals(9600000.00, (float) $projectWithDiscount->grand_total);
+        $this->assertEquals(2400000.00, (float) $projectWithDiscount->getAnnualSavings());
+
+        // Now test when discount is disabled
+        $projectWithoutDiscount = Project::create([
+            'user_id' => $this->sales1->id,
+            'client_name' => 'PT No Discount Client',
+            'billing_type' => 'subscription',
+            'subscription_basis' => 'modular',
+            'billing_cycle' => 'yearly',
+            'apply_annual_discount' => false,
+            'discount_percentage' => 20.00,
+            'subscription_duration' => 1,
+            'setup_fee' => 0.00,
+            'status' => 'Generated',
+        ]);
+
+        ProjectItem::create([
+            'project_id' => $projectWithoutDiscount->id,
+            'item_name' => 'Core Module',
+            'base_price' => 1000000.00,
+            'complexity_weight' => 1.0,
+            'calculated_price' => 1000000.00,
+        ]);
+
+        $projectWithoutDiscount->recalculateGrandTotal();
+
+        // Monthly = 1,000,000. Yearly full = 12,000,000. No discount = 12,000,000. Savings = 0.
+        $this->assertEquals(12000000.00, (float) $projectWithoutDiscount->grand_total);
+        $this->assertEquals(0.0, (float) $projectWithoutDiscount->getAnnualSavings());
+    }
+
+    public function test_project_category_and_timeline_persistence_and_pdf(): void
+    {
+        $response = $this->actingAs($this->sales1)->post('/projects', [
+            'client_name' => 'PT Solusi Cerdas Indonesia',
+            'project_category' => 'Web Application / SaaS',
+            'estimated_timeline' => '3 - 4 Minggu (Standar)',
+            'billing_type' => 'one_off',
+            'maintenance_months' => 3,
+            'status' => 'Generated',
+            'items' => [
+                [
+                    'item_name' => 'Landing Page & SaaS Admin',
+                    'base_price' => 2500000,
+                    'complexity_weight' => 1.0,
+                ]
+            ]
+        ]);
+
+        $response->assertRedirect('/projects');
+
+        $project = Project::where('client_name', 'PT Solusi Cerdas Indonesia')->first();
+        $this->assertNotNull($project);
+        $this->assertEquals('Web Application / SaaS', $project->project_category);
+        $this->assertEquals('3 - 4 Minggu (Standar)', $project->estimated_timeline);
+
+        // Test PDF generation includes the new fields
+        $pdfResponse = $this->actingAs($this->sales1)->get("/projects/{$project->id}/pdf");
+        $pdfResponse->assertOk();
+    }
 }
+
 
 

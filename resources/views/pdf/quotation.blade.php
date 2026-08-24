@@ -336,7 +336,17 @@
                 <div class="meta-box">
                     <div class="meta-heading">Ditujukan Kepada (Klien)</div>
                     <div class="meta-client-name">{{ $project->client_name }}</div>
-                    <div style="font-size: 9.5px; color: #64748b; margin-top: 6px;">
+                    @if($project->project_category)
+                        <div style="font-size: 10px; color: #1e293b; font-weight: bold; margin-top: 4px;">
+                            <span style="color: #64748b; font-weight: normal;">Kategori Solusi:</span> {{ $project->project_category }}
+                        </div>
+                    @endif
+                    @if($project->estimated_timeline)
+                        <div style="font-size: 10px; color: #1e293b; font-weight: bold; margin-top: 2px;">
+                            <span style="color: #64748b; font-weight: normal;">Estimasi Timeline:</span> {{ $project->estimated_timeline }}
+                        </div>
+                    @endif
+                    <div style="font-size: 9px; color: #64748b; margin-top: 5px;">
                         Dokumen Resmi Penawaran Pengembangan Perangkat Lunak
                     </div>
                 </div>
@@ -578,6 +588,17 @@
                                 {{ \Illuminate\Support\Number::currency($project->getRecurringPerCycle(), 'IDR', 'id') }} / {{ $cycleUnit }}
                             </td>
                         </tr>
+
+                        @if($project->billing_cycle === 'yearly' && $project->apply_annual_discount && $project->getAnnualSavings() > 0)
+                            <tr style="background-color: #ecfdf5;">
+                                <td style="color: #065f46; font-weight: bold; font-size: 9.5px;">
+                                    Diskon Tahunan ({{ number_format($project->discount_percentage ?: 20, 0) }}% OFF):
+                                </td>
+                                <td class="text-right" style="font-weight: bold; color: #047857; font-size: 9.5px;">
+                                    -{{ \Illuminate\Support\Number::currency($project->getAnnualSavings(), 'IDR', 'id') }} / th
+                                </td>
+                            </tr>
+                        @endif
                         @if((float) $project->setup_fee > 0)
                             <tr>
                                 <td style="color: #64748b;">Biaya Setup Awal:</td>

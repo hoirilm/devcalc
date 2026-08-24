@@ -45,6 +45,13 @@ const activeCategory = ref(props.filters?.category || '');
 // Modal State
 const modalOpen = ref(false);
 const editingModule = ref(null);
+const detailModalOpen = ref(false);
+const selectedModule = ref(null);
+
+function openDetailModal(module) {
+  selectedModule.value = module;
+  detailModalOpen.value = true;
+}
 
 const form = useForm({
   name: '',
@@ -61,10 +68,25 @@ function applySearch() {
   }, { preserveState: true, replace: true });
 }
 
+function clearSearch() {
+  search.value = '';
+  applySearch();
+}
+
 function selectCategory(cat) {
   activeCategory.value = cat;
   applySearch();
 }
+
+function resetAllFilters() {
+  search.value = '';
+  activeCategory.value = '';
+  applySearch();
+}
+
+const hasActiveFilters = computed(() => {
+  return !!search.value || !!activeCategory.value;
+});
 
 function openCreateModal() {
   editingModule.value = null;
@@ -175,9 +197,10 @@ function confirmDeleteModule() {
             />
             <button
               v-if="search"
+              type="button"
               @click="clearSearch"
               title="Bersihkan Pencarian"
-              class="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition cursor-pointer"
+              class="absolute right-3 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg transition cursor-pointer z-10"
             >
               <X class="w-3.5 h-3.5" />
             </button>
@@ -276,7 +299,7 @@ function confirmDeleteModule() {
           <table class="w-full text-left border-collapse">
             <thead>
               <tr class="border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold uppercase text-slate-400">
-                <th class="py-3 px-4">Nama Modul & Deskripsi</th>
+                <th class="py-3 px-4">Nama Modul</th>
                 <th class="py-3 px-4">Kategori Domain</th>
                 <th class="py-3 px-4">Harga Beli Putus</th>
                 <th class="py-3 px-4">Langganan / Bulan</th>
@@ -284,15 +307,19 @@ function confirmDeleteModule() {
               </tr>
             </thead>
             <tbody class="divide-y divide-slate-100 dark:divide-slate-800 text-xs font-semibold">
-              <tr v-for="item in modules.data" :key="item.id" class="hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition">
+              <tr 
+                v-for="item in modules.data" 
+                :key="item.id" 
+                @click="openDetailModal(item)"
+                class="hover:bg-indigo-50/50 dark:hover:bg-slate-800/60 transition cursor-pointer group"
+              >
                 <td class="py-3.5 px-4">
-                  <div class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
-                    <Layers class="w-4 h-4 text-indigo-500" />
-                    <span>{{ item.name }}</span>
+                  <div class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition">
+                      <Layers class="w-4 h-4" />
+                    </div>
+                    <span class="group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">{{ item.name }}</span>
                   </div>
-                  <p v-if="item.description" class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {{ item.description }}
-                  </p>
                 </td>
 
                 <td class="py-3.5 px-4">
@@ -315,6 +342,7 @@ function confirmDeleteModule() {
                     <!-- Ubah Modul Button -->
                     <div class="relative group/btn">
                       <button
+                        type="button"
                         @click="openEditModal(item)"
                         class="w-8 h-8 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-indigo-600 hover:text-white dark:hover:bg-indigo-500 hover:border-indigo-500 transition-all duration-200 flex items-center justify-center border border-slate-200/80 dark:border-slate-700/80 shadow-xs active:scale-95 cursor-pointer"
                       >
@@ -328,6 +356,7 @@ function confirmDeleteModule() {
                     <!-- Hapus Modul Button -->
                     <div class="relative group/btn">
                       <button
+                        type="button"
                         @click="promptDeleteModule(item.id, item.name)"
                         class="w-8 h-8 rounded-xl bg-slate-100/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 hover:bg-rose-600 hover:text-white dark:hover:bg-rose-500 hover:border-rose-500 transition-all duration-200 flex items-center justify-center border border-slate-200/80 dark:border-slate-700/80 shadow-xs active:scale-95 cursor-pointer"
                       >
@@ -353,14 +382,120 @@ function confirmDeleteModule() {
 
     </div>
 
-    <!-- Create/Edit Module Modal -->
-    <Modal :show="modalOpen" @close="modalOpen = false" maxWidth="lg">
-      <div class="p-6 space-y-4">
-        <h3 class="text-base font-bold text-slate-900 dark:text-white">
-          {{ editingModule ? 'Ubah Modul Katalog' : 'Tambah Modul Baru' }}
-        </h3>
+    <!-- View Detail Modal -->
+    <Modal :show="detailModalOpen" max-width="lg" @close="detailModalOpen = false">
+      <div class="p-6 space-y-5">
+        
+        <!-- Modal Header -->
+        <div class="flex items-start justify-between gap-3 border-b border-slate-100 dark:border-slate-800/80 pb-4">
+          <div class="space-y-1.5">
+            <div class="flex items-center gap-2">
+              <Badge variant="sky">
+                <Tag class="w-3 h-3" />
+                <span>{{ selectedModule?.category || 'Umum' }}</span>
+              </Badge>
+              <span class="text-[10px] font-mono text-slate-400">ID: #MOD-{{ selectedModule?.id }}</span>
+            </div>
+            <h3 class="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-snug">
+              {{ selectedModule?.name }}
+            </h3>
+          </div>
 
-        <form @submit.prevent="saveModule" class="space-y-4 pt-2">
+          <button 
+            type="button"
+            @click="detailModalOpen = false" 
+            class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer shrink-0"
+          >
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Pricing Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <!-- One-off Price -->
+          <div class="p-4 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60 space-y-1">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+              Harga Beli Putus (One-Off)
+            </div>
+            <div class="text-base font-black text-slate-900 dark:text-white">
+              {{ selectedModule?.base_price_formatted }}
+            </div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400">
+              Tarif dasar acuan sebelum bobot
+            </div>
+          </div>
+
+          <!-- Subscription Price -->
+          <div class="p-4 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60 space-y-1">
+            <div class="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              Skema Langganan / Bulan
+            </div>
+            <div class="text-base font-black text-emerald-600 dark:text-emerald-400">
+              {{ selectedModule?.subscription_price_formatted }}
+            </div>
+            <div class="text-[10px] text-slate-500 dark:text-slate-400">
+              {{ selectedModule?.subscription_price > 0 ? 'Tarif tetap per bulan' : 'Otomatis 8% dari total one-off' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Description & Scope Section -->
+        <div class="space-y-2">
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider text-[11px]">
+            Deskripsi & Spesifikasi Fitur
+          </label>
+          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
+            <p v-if="selectedModule?.description">
+              {{ selectedModule.description }}
+            </p>
+            <p v-else class="text-slate-400 italic text-[11px]">
+              Belum ada rincian deskripsi spesifik untuk modul ini.
+            </p>
+          </div>
+        </div>
+
+        <!-- Modal Footer Actions -->
+        <div class="flex items-center justify-between gap-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
+          <div class="text-[11px] text-slate-400">
+            Dibuat: {{ selectedModule?.created_at_formatted || '-' }}
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              @click="detailModalOpen = false"
+              class="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              Tutup
+            </button>
+
+            <button
+              type="button"
+              @click="detailModalOpen = false; openEditModal(selectedModule)"
+              class="px-4 py-2 text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5 cursor-pointer"
+            >
+              <Edit3 class="w-3.5 h-3.5" />
+              <span>Ubah Modul</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </Modal>
+
+    <!-- Create / Edit Modal -->
+    <Modal :show="modalOpen" max-width="md" @close="modalOpen = false">
+      <div class="p-6 space-y-4">
+        <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+          <h3 class="text-base font-bold text-slate-900 dark:text-white">
+            {{ editingModule ? 'Ubah Modul Katalog' : 'Tambah Modul Katalog Baru' }}
+          </h3>
+          <button @click="modalOpen = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <form @submit.prevent="saveModule" class="space-y-4">
           <div class="space-y-1.5">
             <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Nama Modul *</label>
             <input
