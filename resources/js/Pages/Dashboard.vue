@@ -18,7 +18,6 @@ import {
   Printer, 
   ExternalLink,
   FileText,
-  DollarSign,
   Briefcase,
   Sparkles,
   TrendingUp,
@@ -305,7 +304,7 @@ function goToHelp() {
 
         <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4 transition hover:border-emerald-300 dark:hover:border-emerald-800">
           <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-            <DollarSign class="w-6 h-6" />
+            <Banknote class="w-6 h-6" />
           </div>
           <div>
             <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Nilai Kontrak</p>

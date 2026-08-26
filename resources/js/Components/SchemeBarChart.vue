@@ -3,7 +3,6 @@ import { computed, ref } from 'vue';
 import { 
   Briefcase, 
   Repeat, 
-  DollarSign, 
   TrendingUp, 
   Layers, 
   CheckCircle2,
