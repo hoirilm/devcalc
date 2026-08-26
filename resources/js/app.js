@@ -19,3 +19,11 @@ createInertiaApp({
         color: '#6366f1',
     },
 });
+
+// Force reload if page is restored from Back-Forward Cache (bfcache)
+window.addEventListener('pageshow', (event) => {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+
