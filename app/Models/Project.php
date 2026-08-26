@@ -102,15 +102,44 @@ class Project extends Model
         return $max + 1;
     }
 
+    public function getHostingTotal(): float
+    {
+        return (float) $this->items()
+            ->whereNull('module_id')
+            ->where(function ($q) {
+                $q->where('item_name', 'like', '%Hosting%')
+                  ->orWhere('item_name', 'like', '%Server%')
+                  ->orWhere('item_name', 'like', '%VPS%')
+                  ->orWhere('item_name', 'like', '%cPanel%');
+            })
+            ->sum('calculated_price');
+    }
+
+    public function getSoftwareItemsTotal(): float
+    {
+        return (float) $this->items()
+            ->where(function ($q) {
+                $q->whereNotNull('module_id')
+                  ->orWhere(function ($q2) {
+                      $q2->where('item_name', 'not like', '%Hosting%')
+                         ->where('item_name', 'not like', '%Server%')
+                         ->where('item_name', 'not like', '%VPS%')
+                         ->where('item_name', 'not like', '%cPanel%');
+                  });
+            })
+            ->sum('calculated_price');
+    }
+
     public function getBaseMonthlyRecurring(): float
     {
-        $itemsTotal = (float) $this->items()->sum('calculated_price');
+        $hostingTotal = $this->getHostingTotal();
+        $softwareTotal = $this->getSoftwareItemsTotal();
         $userTotal = ((int) ($this->user_count ?: 0)) * ((float) ($this->price_per_user ?: 0));
 
         return match ($this->subscription_basis) {
-            'per_user' => $userTotal,
-            'hybrid' => $itemsTotal + $userTotal,
-            default => $itemsTotal, // 'modular'
+            'per_user' => $userTotal + $hostingTotal,
+            'hybrid' => $softwareTotal + $hostingTotal + $userTotal,
+            default => $softwareTotal + $hostingTotal, // 'modular'
         };
     }
 
@@ -144,14 +173,15 @@ class Project extends Model
 
     public function recalculateGrandTotal(): void
     {
+        $setupFee = (float) ($this->setup_fee ?: 0);
+
         if ($this->isSubscription()) {
             $duration = (int) ($this->subscription_duration ?: 1);
-            $setupFee = (float) ($this->setup_fee ?: 0);
             $recurring = $this->getRecurringPerCycle();
 
             $this->grand_total = $setupFee + ($recurring * $duration);
         } else {
-            $this->grand_total = (float) $this->items()->sum('calculated_price');
+            $this->grand_total = $setupFee + (float) $this->items()->sum('calculated_price');
         }
 
         $this->saveQuietly();

@@ -34,8 +34,8 @@ const stepValidationError = ref('');
 
 const form = useForm({
   client_name: props.project.client_name,
-  project_category: props.project.project_category || 'Web Application / SaaS',
-  estimated_timeline: props.project.estimated_timeline || '3 - 4 Minggu (Standar)',
+  project_category: props.project.project_category || 'Web Application / SaaS Platform',
+  estimated_timeline: props.project.estimated_timeline || '3 - 4 Minggu (Standar Pengerjaan)',
   billing_type: props.project.billing_type,
   subscription_basis: props.project.subscription_basis || 'modular',
   billing_cycle: props.project.billing_cycle || 'monthly',
@@ -58,6 +58,52 @@ const form = useForm({
     is_hosting: false,
   }))
 });
+
+// Category & Timeline Preset Configurations
+const categoryPresets = [
+  'Web Application / SaaS Platform',
+  'E-Commerce & Toko Online',
+  'Company Profile & Landing Page',
+  'Sistem Informasi Internal / ERP & CRM',
+  'Custom Backend API & Integrasi',
+  'Mobile Application (Android / iOS)',
+];
+
+const timelinePresets = [
+  '1 - 2 Minggu (Fast-track MVP)',
+  '3 - 4 Minggu (Standar Pengerjaan)',
+  '1 - 2 Bulan (Skala Sedang)',
+  '2 - 3 Bulan (Komprehensif Enterprise)',
+  '3 - 6 Bulan (Multi-Phase Project)',
+];
+
+const selectedCategoryPreset = ref(
+  categoryPresets.includes(form.project_category) ? form.project_category : (form.project_category ? '__custom__' : categoryPresets[0])
+);
+
+const selectedTimelinePreset = ref(
+  timelinePresets.includes(form.estimated_timeline) ? form.estimated_timeline : (form.estimated_timeline ? '__custom__' : timelinePresets[1])
+);
+
+function onCategoryPresetChange(e) {
+  const val = e.target.value;
+  selectedCategoryPreset.value = val;
+  if (val !== '__custom__') {
+    form.project_category = val;
+  } else {
+    form.project_category = '';
+  }
+}
+
+function onTimelinePresetChange(e) {
+  const val = e.target.value;
+  selectedTimelinePreset.value = val;
+  if (val !== '__custom__') {
+    form.estimated_timeline = val;
+  } else {
+    form.estimated_timeline = '';
+  }
+}
 
 // Helper to determine if a module or item is Hosting & Infrastruktur
 function isHostingCategory(cat) {
@@ -127,47 +173,123 @@ function onSoftwareModuleSelect(index, event) {
   }
 }
 
-// Step 3 Hosting Selection
-function selectHostingPreset(mod) {
-  const nonHosting = form.items.filter(item => !isHostingModule(item));
+// Step 3 Hosting Mode State ('none' | 'shared' | 'vps')
+const existingHosting = props.project.items?.find(item => isHostingCategory(props.modules?.find(m => m.id == item.module_id)?.category) || item.is_hosting || item.item_name?.toLowerCase().includes('hosting') || item.item_name?.toLowerCase().includes('vps') || item.item_name?.toLowerCase().includes('server'));
+
+let initialHostingMode = 'none';
+let initialMonthlyRate = 50000;
+let initialDuration = 12;
+
+if (existingHosting) {
+  const nameLower = (existingHosting.item_name || '').toLowerCase();
+  initialHostingMode = nameLower.includes('shared') || nameLower.includes('cpanel') || nameLower.includes('domain') ? 'shared' : 'vps';
   
-  if (mod) {
-    const price = form.billing_type === 'subscription'
-      ? (mod.subscription_price > 0 ? mod.subscription_price : Math.round(mod.base_price * 0.08))
-      : mod.base_price;
-
-    nonHosting.push({
-      id: null,
-      module_id: mod.id,
-      item_name: mod.name,
-      base_price: price,
-      complexity_weight: 1.0,
-      is_hosting: true,
-    });
+  if (props.project.billing_type === 'subscription') {
+    initialMonthlyRate = Number(existingHosting.base_price || 50000);
+    initialDuration = Number(props.project.subscription_duration || 12);
+  } else {
+    // One-Off: assume 12 months duration if base price is package price
+    const base = Number(existingHosting.base_price || 600000);
+    if (base >= 120000) {
+      initialDuration = 12;
+      initialMonthlyRate = Math.round(base / 12);
+    } else {
+      initialMonthlyRate = base;
+      initialDuration = 1;
+    }
   }
-
-  form.items = nonHosting;
 }
 
-function selectCustomHosting() {
-  const nonHosting = form.items.filter(item => !isHostingModule(item));
-  nonHosting.push({
-    id: null,
-    module_id: null,
-    item_name: 'Custom Cloud VPS / Dedicated Server',
-    base_price: 150000,
-    complexity_weight: 1.0,
-    is_hosting: true,
-  });
-  form.items = nonHosting;
-}
+const hostingMode = ref(initialHostingMode);
+const hostingMonthlyRate = ref(initialMonthlyRate);
+const hostingDurationMonths = ref(initialDuration);
 
 const currentHostingItem = computed(() => {
   return form.items.find(item => isHostingModule(item)) || null;
 });
 
-// Update item base prices when billing type changes (One-Off vs Subscription)
+const hostingCalculationText = computed(() => {
+  if (!currentHostingItem.value || hostingMode.value === 'none') return null;
+  const monthly = Number(hostingMonthlyRate.value || 0);
+  const months = form.billing_type === 'subscription' 
+    ? (form.billing_cycle === 'yearly' ? (form.subscription_duration || 1) * 12 : (form.subscription_duration || 1))
+    : Number(hostingDurationMonths.value || 12);
+  const total = monthly * months;
+  return {
+    monthly,
+    months,
+    total,
+    formatted: `${formatRupiah(monthly)} / bln × ${months} Bulan = ${formatRupiah(total)}`,
+  };
+});
+
+function syncHostingBasePrice() {
+  if (currentHostingItem.value) {
+    if (form.billing_type === 'subscription') {
+      currentHostingItem.value.base_price = Number(hostingMonthlyRate.value || 0);
+    } else {
+      currentHostingItem.value.base_price = Math.round(Number(hostingMonthlyRate.value || 0) * Number(hostingDurationMonths.value || 1));
+    }
+  }
+}
+
+watch([() => form.billing_type, () => form.billing_cycle, () => form.subscription_duration], () => {
+  if (form.billing_type === 'subscription') {
+    const totalMonths = form.billing_cycle === 'yearly' 
+      ? Number(form.subscription_duration || 1) * 12 
+      : Number(form.subscription_duration || 1);
+    hostingDurationMonths.value = totalMonths;
+  }
+}, { immediate: true });
+
+watch([hostingMonthlyRate, hostingDurationMonths, () => form.billing_type, () => form.billing_cycle, () => form.subscription_duration], () => {
+  syncHostingBasePrice();
+});
+
+function setHostingMode(mode) {
+  hostingMode.value = mode;
+  const nonHosting = form.items.filter(item => !isHostingModule(item));
+  
+  if (mode === 'none') {
+    form.items = nonHosting;
+  } else if (mode === 'shared') {
+    hostingMonthlyRate.value = 50000;
+    hostingDurationMonths.value = 12;
+    const initialBase = form.billing_type === 'subscription' ? 50000 : 50000 * 12;
+    nonHosting.push({
+      id: null,
+      module_id: null,
+      item_name: 'Shared Hosting & Setup Domain (.com / .id)',
+      base_price: initialBase,
+      complexity_weight: 1.0,
+      is_hosting: true,
+    });
+    form.items = nonHosting;
+  } else if (mode === 'vps') {
+    hostingMonthlyRate.value = 150000;
+    hostingDurationMonths.value = 12;
+    const initialBase = form.billing_type === 'subscription' ? 150000 : 150000 * 12;
+    nonHosting.push({
+      id: null,
+      module_id: null,
+      item_name: 'Cloud VPS Server Deployment (Linux Ubuntu + Nginx)',
+      base_price: initialBase,
+      complexity_weight: 1.0,
+      is_hosting: true,
+    });
+    form.items = nonHosting;
+  }
+}
+
+// Update item base prices & validate SLA when billing type changes (One-Off vs Subscription)
 watch(() => form.billing_type, (newType) => {
+  if (newType === 'one_off') {
+    const validSlaOptions = [1, 3, 6, 12];
+    if (!validSlaOptions.includes(Number(form.maintenance_months))) {
+      form.maintenance_months = 3;
+    }
+  }
+
   form.items.forEach(item => {
     if (item.module_id) {
       const mod = props.modules.find(m => m.id == item.module_id);
@@ -183,14 +305,6 @@ watch(() => form.billing_type, (newType) => {
 });
 
 // Live Calculations
-const itemsTotal = computed(() => {
-  return form.items.reduce((sum, item) => {
-    const base = item.base_price || 0;
-    const comp = item.complexity_weight || 1.0;
-    return sum + Math.round(base * comp);
-  }, 0);
-});
-
 const softwareItemsTotal = computed(() => {
   return form.items
     .filter(item => !isHostingModule(item))
@@ -201,25 +315,33 @@ const softwareItemsTotal = computed(() => {
     }, 0);
 });
 
+const hostingDurationTotal = computed(() => {
+  if (hostingMode.value === 'none' || !currentHostingItem.value) return 0;
+  const monthly = Number(hostingMonthlyRate.value || 0);
+  const months = Number(hostingDurationMonths.value || 12);
+  return monthly * months;
+});
+
 const hostingItemsTotal = computed(() => {
-  return form.items
-    .filter(item => isHostingModule(item))
-    .reduce((sum, item) => {
-      const base = item.base_price || 0;
-      const comp = item.complexity_weight || 1.0;
-      return sum + Math.round(base * comp);
-    }, 0);
+  return hostingDurationTotal.value;
+});
+
+const itemsTotal = computed(() => {
+  return softwareItemsTotal.value + hostingDurationTotal.value;
 });
 
 const monthlyBaseRecurring = computed(() => {
-  const modTotal = itemsTotal.value;
+  const softwareTotal = softwareItemsTotal.value;
+  const hostingMonthly = (hostingMode.value !== 'none' && currentHostingItem.value)
+    ? Number(hostingMonthlyRate.value || 0)
+    : 0;
   const userTotal = (form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid')
     ? Math.round((form.user_count || 0) * (form.price_per_user || 0))
     : 0;
 
-  if (form.subscription_basis === 'per_user') return userTotal;
-  if (form.subscription_basis === 'hybrid') return modTotal + userTotal;
-  return modTotal; // modular
+  if (form.subscription_basis === 'per_user') return userTotal + hostingMonthly;
+  if (form.subscription_basis === 'hybrid') return softwareTotal + userTotal + hostingMonthly;
+  return softwareTotal + hostingMonthly; // modular
 });
 
 const userRecurringTotal = computed(() => {
@@ -252,22 +374,22 @@ const recurringPerCycle = computed(() => {
 });
 
 const originalGrandTotal = computed(() => {
+  const setup = form.setup_fee || 0;
   if (form.billing_type === 'subscription') {
     const duration = form.subscription_duration || 1;
-    const setup = form.setup_fee || 0;
     const cycleFull = form.billing_cycle === 'yearly' ? (monthlyBaseRecurring.value * 12) : monthlyBaseRecurring.value;
     return setup + (cycleFull * duration);
   }
-  return itemsTotal.value;
+  return itemsTotal.value + setup;
 });
 
 const calculatedGrandTotal = computed(() => {
+  const setup = form.setup_fee || 0;
   if (form.billing_type === 'subscription') {
     const duration = form.subscription_duration || 1;
-    const setup = form.setup_fee || 0;
     return setup + (recurringPerCycle.value * duration);
   }
-  return itemsTotal.value;
+  return itemsTotal.value + setup;
 });
 
 watch([() => form.billing_type, () => form.subscription_duration, () => form.billing_cycle], () => {
@@ -364,19 +486,19 @@ function submit(targetStatus) {
               </span>
             </div>
             <p class="text-xs text-slate-500 dark:text-slate-400">
-              Alur 4 langkah: 1. Info Klien &bull; 2. Fitur Software &bull; 3. Hosting & Server &bull; 4. Skema & Finalisasi.
+              Alur 3 langkah: 1. Info Klien & Profil &bull; 2. Fitur Software &bull; 3. Skema, Server & Finalisasi.
             </p>
           </div>
         </div>
 
         <div class="hidden sm:flex items-center gap-2">
-          <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Langkah {{ currentStep }} dari 4</span>
+          <span class="text-xs font-bold text-slate-500 dark:text-slate-400">Langkah {{ currentStep }} dari 3</span>
         </div>
       </div>
 
       <!-- WIZARD STEPPER PROGRESS BAR -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-3 shadow-xs">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
           
           <!-- Step 1 Tab Button -->
           <button
@@ -402,7 +524,7 @@ function submit(targetStatus) {
             </div>
             <div class="min-w-0">
               <div class="text-[10px] font-bold uppercase tracking-wider opacity-70">Langkah 1</div>
-              <div class="text-xs font-black truncate">Info Klien</div>
+              <div class="text-xs font-black truncate">Info Klien & Profil</div>
             </div>
           </button>
 
@@ -441,47 +563,19 @@ function submit(targetStatus) {
             class="flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 text-left cursor-pointer"
             :class="currentStep === 3 
               ? 'bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 shadow-xs' 
-              : currentStep > 3 
-                ? 'bg-slate-50 dark:bg-slate-800/60 hover:bg-slate-100 dark:hover:bg-slate-800 text-emerald-700 dark:text-emerald-400' 
-                : 'bg-transparent text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/40'"
+              : 'bg-transparent text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/40'"
           >
             <div 
               class="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0"
               :class="currentStep === 3 
                 ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' 
-                : currentStep > 3 
-                  ? 'bg-emerald-500 text-white' 
-                  : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
+                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
             >
-              <Check v-if="currentStep > 3" class="w-4 h-4" />
-              <span v-else>3</span>
+              <span>3</span>
             </div>
             <div class="min-w-0">
               <div class="text-[10px] font-bold uppercase tracking-wider opacity-70">Langkah 3</div>
-              <div class="text-xs font-black truncate">Server & Hosting</div>
-            </div>
-          </button>
-
-          <!-- Step 4 Tab Button -->
-          <button
-            type="button"
-            @click="goToStep(4)"
-            class="flex items-center gap-3 p-3 rounded-2xl transition-all duration-200 text-left cursor-pointer"
-            :class="currentStep === 4 
-              ? 'bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 shadow-xs' 
-              : 'bg-transparent text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/40'"
-          >
-            <div 
-              class="w-8 h-8 rounded-xl flex items-center justify-center font-black text-xs shrink-0"
-              :class="currentStep === 4 
-                ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/30' 
-                : 'bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400'"
-            >
-              <span>4</span>
-            </div>
-            <div class="min-w-0">
-              <div class="text-[10px] font-bold uppercase tracking-wider opacity-70">Langkah 4</div>
-              <div class="text-xs font-black truncate">Skema & Finalisasi</div>
+              <div class="text-xs font-black truncate">Skema, Server & Finalisasi</div>
             </div>
           </button>
 
@@ -545,16 +639,26 @@ function submit(targetStatus) {
                     Kategori Solusi / Tipe Sistem (Opsional)
                   </label>
                   <select
-                    v-model="form.project_category"
+                    :value="selectedCategoryPreset"
+                    @change="onCategoryPresetChange"
                     class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white cursor-pointer"
                   >
-                    <option value="Web Application / SaaS">🚀 Web Application / SaaS Platform</option>
-                    <option value="E-Commerce & Online Store">🛒 E-Commerce & Toko Online</option>
-                    <option value="Company Profile & Landing Page">🏢 Company Profile & Landing Page</option>
-                    <option value="Sistem Informasi Internal / ERP">📊 Sistem Internal, ERP & CRM</option>
-                    <option value="Custom API & Service Integration">⚡ Custom Backend API & Integrasi</option>
+                    <option v-for="cat in categoryPresets" :key="cat" :value="cat">
+                      {{ cat }}
+                    </option>
+                    <option value="__custom__">✍️ Kustom / Ketik Kategori Sendiri...</option>
                   </select>
-                  <p class="text-[11px] text-slate-400">Klasifikasi arsitektur solusi aplikasi.</p>
+                  
+                  <!-- Custom text input when custom option selected -->
+                  <input
+                    v-if="selectedCategoryPreset === '__custom__'"
+                    v-model="form.project_category"
+                    type="text"
+                    autofocus
+                    placeholder="Ketik kategori sistem (e.g. AI Chatbot Assistant, Web3 dApp)"
+                    class="w-full px-3.5 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition"
+                  />
+                  <p class="text-[11px] text-slate-400">Pilih dari rekomendasi atau ketik kategori sistem sendiri.</p>
                 </div>
 
                 <!-- Estimated Timeline -->
@@ -563,14 +667,25 @@ function submit(targetStatus) {
                     Estimasi Target Timeline Deliverable (Opsional)
                   </label>
                   <select
-                    v-model="form.estimated_timeline"
+                    :value="selectedTimelinePreset"
+                    @change="onTimelinePresetChange"
                     class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl text-slate-900 dark:text-white cursor-pointer"
                   >
-                    <option value="1 - 2 Minggu (Fast-track MVP)">⚡ 1 - 2 Minggu (Fast-track MVP)</option>
-                    <option value="3 - 4 Minggu (Standar)">⏱️ 3 - 4 Minggu (Standar Pengerjaan)</option>
-                    <option value="1 - 2 Bulan (Sedang)">📅 1 - 2 Bulan (Skala Sedang)</option>
-                    <option value="2 - 3 Bulan (Komprehensif Enterprise)">🏢 2 - 3 Bulan (Komprehensif Enterprise)</option>
+                    <option v-for="time in timelinePresets" :key="time" :value="time">
+                      {{ time }}
+                    </option>
+                    <option value="__custom__">✍️ Kustom / Ketik Target Waktu Sendiri...</option>
                   </select>
+
+                  <!-- Custom text input when custom option selected -->
+                  <input
+                    v-if="selectedTimelinePreset === '__custom__'"
+                    v-model="form.estimated_timeline"
+                    type="text"
+                    autofocus
+                    placeholder="Ketik target waktu (e.g. 5 Hari Kerja Kilat atau 6 Bulan Multi-Fase)"
+                    class="w-full px-3.5 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 rounded-xl text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 transition"
+                  />
                   <p class="text-[11px] text-slate-400">Target pengerjaan yang disepakati bersama klien.</p>
                 </div>
               </div>
@@ -580,7 +695,7 @@ function submit(targetStatus) {
                 <Sparkles class="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0 mt-0.5" />
                 <div class="space-y-1 text-slate-600 dark:text-slate-300">
                   <div class="font-bold text-slate-900 dark:text-white">Alur Estimasi DevCalc:</div>
-                  <div>Setelah memeriksa nama klien, lanjutkan ke <b>Langkah 2</b> untuk modul fitur software dan <b>Langkah 3</b> untuk infrastruktur hosting. Di langkah akhir, Anda dapat menyesuaikan skema pembayaran (Beli Putus atau SaaS).</div>
+                  <div>Setelah memeriksa profil klien, lanjutkan ke <b>Langkah 2</b> untuk modul fitur software. Di <b>Langkah 3</b>, Anda dapat menentukan skema pembayaran (Beli Putus atau SaaS), konfigurasi server hosting, serta langsung memperbarui surat penawaran harga resmi.</div>
                 </div>
               </div>
             </div>
@@ -721,380 +836,426 @@ function submit(targetStatus) {
               </button>
             </div>
 
-            <!-- Step 2 Navigation Buttons -->
-            <div class="flex justify-between items-center pt-5 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                @click="prevStep"
-                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
-              >
-                <ArrowLeft class="w-4 h-4" />
-                <span>Kembali ke Step 1</span>
-              </button>
-
-              <button
-                type="button"
-                @click="nextStep"
-                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-md shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
-              >
-                <span>Lanjut ke Step 3: Server & Hosting</span>
-                <ArrowRight class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <!-- ========================================================================= -->
-          <!-- STEP 3: INFRASTRUKTUR & CLOUD HOSTING (MASTER DATA CATEGORY) -->
-          <!-- ========================================================================= -->
-          <div v-if="currentStep === 3" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <Server class="w-4 h-4 text-emerald-500" />
-                  <span>3. Infrastruktur & Cloud Hosting</span>
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Pilih paket server dari Master Data <span class="font-bold text-indigo-600 dark:text-indigo-400">"Hosting & Infrastruktur"</span> atau gunakan server milik klien.
-                </p>
-              </div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 3 of 4</span>
-            </div>
-
-            <!-- Option 1: Client Provides Server (No Extra Fee) -->
-            <div
-              @click="selectHostingPreset(null)"
-              class="p-4.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-4"
-              :class="!currentHostingItem 
-                ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs' 
-                : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30'"
-            >
-              <div class="flex items-center gap-3.5">
-                <div 
-                  class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
-                  :class="!currentHostingItem ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'"
+              <!-- Step 2 Navigation Buttons -->
+              <div class="flex justify-between items-center pt-5 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  @click="prevStep"
+                  class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
                 >
-                  <ShieldCheck class="w-5 h-5" />
-                </div>
+                  <ArrowLeft class="w-4 h-4" />
+                  <span>Kembali ke Step 1</span>
+                </button>
+
+                <button
+                  type="button"
+                  @click="nextStep"
+                  class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-md shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
+                >
+                  <span>Lanjut ke Step 3: Skema, Server & Finalisasi</span>
+                  <ArrowRight class="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- STEP 3: SKEMA PEMBAYARAN, SERVER HOSTING & FINALISASI -->
+            <!-- ========================================================================= -->
+            <div v-if="currentStep === 3" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
+              <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
                 <div>
-                  <div class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
-                    <span>Server Disediakan Mandiri oleh Klien</span>
-                    <span v-if="!currentHostingItem" class="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-extrabold">Aktif</span>
-                  </div>
-                  <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Klien sudah memiliki VPS / CPanel sendiri. Tidak ada biaya sewa server tambahan pada penawaran ini.
-                  </div>
+                  <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <CreditCard class="w-4 h-4 text-indigo-500" />
+                    <span>3. Skema Komersial, Server & Finalisasi Penawaran</span>
+                  </h3>
+                  <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Tentukan model kontrak pembayaran, infrastruktur server hosting, biaya setup, dan catatan penawaran resmi.
+                  </p>
                 </div>
+                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 3 of 3</span>
               </div>
-              <div class="text-right shrink-0">
-                <span class="text-xs font-black text-slate-900 dark:text-white">Rp 0</span>
-              </div>
-            </div>
 
-            <!-- Option 2: Choose Preset Hosting Package from Master Data -->
-            <div class="space-y-3 pt-2">
-              <h4 class="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Cloud class="w-3.5 h-3.5 text-indigo-500" />
-                <span>Pilihan Paket Server dari Master Data ({{ hostingCatalog.length }} Paket Tersedia):</span>
-              </h4>
+              <!-- Bagian 1: Model Kontrak & Pembayaran -->
+              <div class="p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4">
+                <h4 class="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles class="w-3.5 h-3.5 text-indigo-500" />
+                  <span>1. Model Kontrak & Skema Pembayaran</span>
+                </h4>
 
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                <div
-                  v-for="mod in hostingCatalog"
-                  :key="mod.id"
-                  @click="selectHostingPreset(mod)"
-                  class="p-4.5 rounded-2xl border-2 transition-all cursor-pointer space-y-3 flex flex-col justify-between"
-                  :class="currentHostingItem?.module_id === mod.id 
-                    ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/40 shadow-xs' 
-                    : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-indigo-900 bg-white dark:bg-slate-900'"
-                >
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <!-- Billing Type -->
                   <div class="space-y-1.5">
-                    <div class="flex items-center justify-between">
-                      <span class="text-xs font-black text-slate-900 dark:text-white">{{ mod.name }}</span>
-                      <span v-if="currentHostingItem?.module_id === mod.id" class="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-black">
-                        Dipilih
-                      </span>
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Skema Pembayaran *</label>
+                    <select v-model="form.billing_type" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white transition cursor-pointer">
+                      <option value="one_off">Putus Kontrak (One-Off Build)</option>
+                      <option value="subscription">Berlangganan / SaaS (Subscription)</option>
+                    </select>
+                  </div>
+
+                  <!-- Maintenance SLA (One-Off: Selectable, SaaS: Active for duration) -->
+                  <div v-if="form.billing_type === 'one_off'" class="space-y-1.5">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA) *</label>
+                    <select v-model.number="form.maintenance_months" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white transition cursor-pointer">
+                      <option :value="1">1 Bulan Gratis (Minimal)</option>
+                      <option :value="3">3 Bulan Gratis (Standar SLA)</option>
+                      <option :value="6">6 Bulan Gratis (Extended SLA)</option>
+                      <option :value="12">12 Bulan Gratis (Full Year SLA)</option>
+                    </select>
+                  </div>
+                  <div v-else class="space-y-1.5">
+                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA)</label>
+                    <div class="px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/70 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
+                      <ShieldCheck class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                      <span>Garansi & SLA Aktif Mengikuti Masa Kontrak</span>
                     </div>
-                    <p class="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                      {{ mod.description || 'Infrastruktur cloud hosting terkelola untuk performa aplikasi yang stabil.' }}
-                    </p>
                   </div>
 
-                  <div class="pt-2 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
-                    <span class="text-[10px] font-bold text-slate-400 uppercase">Estimasi Biaya</span>
-                    <span class="text-xs font-black text-indigo-600 dark:text-indigo-400">
-                      {{ formatRupiah(form.billing_type === 'subscription' ? (mod.subscription_price > 0 ? mod.subscription_price : mod.base_price * 0.08) : mod.base_price) }}
-                      <span class="text-[10px] font-normal text-slate-400">/ {{ form.billing_type === 'subscription' ? 'bln' : 'paket' }}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Custom Hosting Option -->
-            <div class="pt-2">
-              <button
-                type="button"
-                @click="selectCustomHosting"
-                class="w-full py-3 border border-slate-300 dark:border-slate-700 hover:border-indigo-400 dark:hover:border-indigo-700 rounded-2xl text-xs font-bold text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 transition flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <Plus class="w-3.5 h-3.5" />
-                <span>Kustom Server / Masukkan Nilai Hosting Manual</span>
-              </button>
-            </div>
-
-            <!-- Custom Hosting Input (if active) -->
-            <div v-if="currentHostingItem && !currentHostingItem.module_id" class="p-4 rounded-2xl bg-amber-50/60 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900/60 space-y-3">
-              <div class="text-xs font-bold text-amber-900 dark:text-amber-300 flex items-center gap-1.5">
-                <Sparkles class="w-3.5 h-3.5" />
-                <span>Kustom Infrastruktur Hosting</span>
-              </div>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div>
-                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Nama Layanan Server</label>
-                  <input
-                    v-model="currentHostingItem.item_name"
-                    type="text"
-                    class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <CurrencyInput v-model="currentHostingItem.base_price" label="Tarif Hosting" />
-                </div>
-              </div>
-            </div>
-
-            <!-- Step 3 Navigation Buttons -->
-            <div class="flex justify-between items-center pt-5 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                @click="prevStep"
-                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
-              >
-                <ArrowLeft class="w-4 h-4" />
-                <span>Kembali ke Step 2</span>
-              </button>
-
-              <button
-                type="button"
-                @click="nextStep"
-                class="px-6 py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-black rounded-2xl shadow-md shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer active:scale-95"
-              >
-                <span>Lanjut ke Step 4: Skema & Finalisasi</span>
-                <ArrowRight class="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-
-          <!-- ========================================================================= -->
-          <!-- STEP 4: SKEMA PEMBAYARAN, BIAYA SETUP, CATATAN & REVIEW FINAL -->
-          <!-- ========================================================================= -->
-          <div v-if="currentStep === 4" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
-            <div class="flex items-center justify-between pb-3 border-b border-slate-200 dark:border-slate-800">
-              <div>
-                <h3 class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <CreditCard class="w-4 h-4 text-purple-500" />
-                  <span>4. Skema Pembayaran, Biaya Setup & Finalisasi</span>
-                </h3>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Tentukan model kontrak bisnis, biaya implementasi, dan catatan penawaran resmi.
-                </p>
-              </div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 4 of 4</span>
-            </div>
-
-            <!-- Billing Scheme & Parameters -->
-            <div class="p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4">
-              <h4 class="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
-                <Sparkles class="w-3.5 h-3.5 text-indigo-500" />
-                <span>Model Kontrak & Pembayaran</span>
-              </h4>
-
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Billing Type -->
-                <div class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Skema Pembayaran *</label>
-                  <select v-model="form.billing_type" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white transition cursor-pointer">
-                    <option value="one_off">Putus Kontrak (One-Off Build)</option>
-                    <option value="subscription">Berlangganan / SaaS (Subscription)</option>
-                  </select>
-                </div>
-
-                <!-- Maintenance SLA (One-Off: Selectable, SaaS: Active for duration) -->
-                <div v-if="form.billing_type === 'one_off'" class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA) *</label>
-                  <select v-model.number="form.maintenance_months" class="w-full px-3.5 py-2.5 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white transition cursor-pointer">
-                    <option :value="1">1 Bulan Gratis (Minimal)</option>
-                    <option :value="3">3 Bulan Gratis (Standar SLA)</option>
-                    <option :value="6">6 Bulan Gratis (Extended SLA)</option>
-                    <option :value="12">12 Bulan Gratis (Full Year SLA)</option>
-                  </select>
-                </div>
-                <div v-else class="space-y-1.5">
-                  <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA)</label>
-                  <div class="px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/70 rounded-xl text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2">
-                    <ShieldCheck class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>Garansi & SLA Aktif Mengikuti Masa Kontrak ({{ form.subscription_duration }} {{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }})</span>
+                  <!-- Setup Fee -->
+                  <div class="space-y-1.5 md:col-span-2">
+                    <CurrencyInput v-model="form.setup_fee" label="Biaya Setup / Onboarding (Opsional)" helperText="Biaya satu kali implementasi, konfigurasi server, atau instalasi database awal" />
                   </div>
                 </div>
 
-                <!-- Setup Fee -->
-                <div class="space-y-1.5 md:col-span-2">
-                  <CurrencyInput v-model="form.setup_fee" label="Biaya Setup / Onboarding (Opsional)" helperText="Biaya satu kali implementasi, konfigurasi server, atau instalasi database awal" />
-                </div>
-              </div>
+                <!-- SaaS Detailed Parameters (if subscription) -->
+                <div v-if="form.billing_type === 'subscription'" class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 space-y-4 mt-3">
+                  <h5 class="text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">
+                    Konfigurasi Langganan SaaS
+                  </h5>
 
-              <!-- SaaS Detailed Parameters (if subscription) -->
-              <div v-if="form.billing_type === 'subscription'" class="p-4 rounded-2xl bg-indigo-50/60 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-900/60 space-y-4 mt-3">
-                <h5 class="text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider">
-                  Konfigurasi Langganan SaaS
-                </h5>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Metode Tagihan</label>
+                      <select v-model="form.subscription_basis" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white">
+                        <option value="modular">Flat Modular (Sewa Modul)</option>
+                        <option value="per_user">Per-User (Kapasitas User)</option>
+                        <option value="hybrid">Hybrid (Modul + User)</option>
+                      </select>
+                    </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div class="space-y-1.5">
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Metode Tagihan</label>
-                    <select v-model="form.subscription_basis" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white">
-                      <option value="modular">Flat Modular (Sewa Modul)</option>
-                      <option value="per_user">Per-User (Kapasitas User)</option>
-                      <option value="hybrid">Hybrid (Modul + User)</option>
-                    </select>
-                  </div>
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Siklus Penagihan</label>
+                      <select v-model="form.billing_cycle" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white">
+                        <option value="monthly">Bulanan (Monthly)</option>
+                        <option value="yearly">Tahunan (Yearly)</option>
+                      </select>
+                    </div>
 
-                  <div class="space-y-1.5">
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Siklus Penagihan</label>
-                    <select v-model="form.billing_cycle" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white">
-                      <option value="monthly">Bulanan (Monthly)</option>
-                      <option value="yearly">Tahunan (Yearly)</option>
-                    </select>
-                  </div>
-
-                  <div class="space-y-1.5">
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      Komitmen Kontrak ({{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }})
-                    </label>
-                    <input v-model.number="form.subscription_duration" type="number" min="1" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
-                  </div>
-
-                  <div v-if="form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid'" class="space-y-1.5">
-                    <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Jumlah Kapasitas User</label>
-                    <input v-model.number="form.user_count" type="number" min="1" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
-                  </div>
-
-                  <CurrencyInput v-if="form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid'" v-model="form.price_per_user" label="Tarif per User / Bulan" />
-
-                  <!-- Annual Discount Toggle Block (Exclusive for Yearly Billing) -->
-                  <div v-if="form.billing_cycle === 'yearly'" class="col-span-1 md:col-span-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
-                    <div class="flex items-start sm:items-center gap-3">
-                      <input
-                        id="annual_discount_toggle_edit"
-                        v-model="form.apply_annual_discount"
-                        type="checkbox"
-                        class="w-4 h-4 mt-0.5 sm:mt-0 text-emerald-600 rounded border-slate-300 dark:border-slate-700 focus:ring-emerald-500 cursor-pointer shrink-0"
-                      />
-                      <label for="annual_discount_toggle_edit" class="cursor-pointer select-none">
-                        <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                          <span>Terapkan Diskon Pembayaran Tahunan</span>
-                          <span class="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-black">{{ form.discount_percentage || 20 }}% OFF</span>
-                        </div>
-                        <div class="text-[11px] text-slate-500 dark:text-slate-400">
-                          Memberikan potongan harga hemat 20% untuk komitmen pembayaran di muka.
-                        </div>
+                    <div class="space-y-1.5">
+                      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        Komitmen Kontrak ({{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }})
                       </label>
+                      <input v-model.number="form.subscription_duration" type="number" min="1" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
                     </div>
 
-                    <div v-if="form.apply_annual_discount && annualSavings > 0" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-black text-right shrink-0">
-                      Hemat {{ formatRupiah(annualSavings) }} / thn
+                    <div v-if="form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid'" class="space-y-1.5">
+                      <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Jumlah Kapasitas User</label>
+                      <input v-model.number="form.user_count" type="number" min="1" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white" />
+                    </div>
+
+                    <CurrencyInput v-if="form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid'" v-model="form.price_per_user" label="Tarif per User / Bulan" />
+
+                    <!-- Annual Discount Toggle Block (Exclusive for Yearly Billing) -->
+                    <div v-if="form.billing_cycle === 'yearly'" class="col-span-1 md:col-span-3 p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-emerald-200 dark:border-emerald-800/70 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                      <div class="flex items-start sm:items-center gap-3">
+                        <input
+                          id="annual_discount_toggle_edit"
+                          v-model="form.apply_annual_discount"
+                          type="checkbox"
+                          class="w-4 h-4 mt-0.5 sm:mt-0 text-emerald-600 rounded border-slate-300 dark:border-slate-700 focus:ring-emerald-500 cursor-pointer shrink-0"
+                        />
+                        <label for="annual_discount_toggle_edit" class="cursor-pointer select-none">
+                          <div class="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                            <span>Terapkan Diskon Pembayaran Tahunan</span>
+                            <span class="px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-black">{{ form.discount_percentage || 20 }}% OFF</span>
+                          </div>
+                          <div class="text-[11px] text-slate-500 dark:text-slate-400">
+                            Memberikan potongan harga hemat 20% untuk komitmen pembayaran di muka.
+                          </div>
+                        </label>
+                      </div>
+
+                      <div v-if="form.apply_annual_discount && annualSavings > 0" class="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-black text-right shrink-0">
+                        Hemat {{ formatRupiah(annualSavings) }} / thn
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Notes Input -->
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Catatan Penawaran / Scope Notes (Opsional)</label>
-              <textarea
-                v-model="form.notes"
-                rows="3"
-                placeholder="Tuliskan catatan syarat & ketentuan khusus, batasan garansi, atau ruang lingkup yang akan dicetak pada surat penawaran."
-                class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white transition"
-              ></textarea>
-            </div>
+              <!-- Bagian 2: Infrastruktur Server & Cloud Hosting -->
+              <div class="p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4">
+                <h4 class="text-xs font-extrabold text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-2">
+                  <Server class="w-3.5 h-3.5 text-emerald-500" />
+                  <span>2. Infrastruktur & Cloud Hosting</span>
+                </h4>
 
-            <!-- Final Review Summary Cards -->
-            <div class="space-y-3 pt-2">
-              <h4 class="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                Ringkasan Rekapitulasi Penawaran:
-              </h4>
+                <div class="space-y-4">
+                  <!-- Option 1: Server Disediakan Mandiri oleh Klien (Rp 0) -->
+                  <div
+                    @click="setHostingMode('none')"
+                    class="p-4.5 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between gap-4"
+                    :class="hostingMode === 'none' 
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/30 shadow-xs' 
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900'"
+                  >
+                    <div class="flex items-center gap-3.5">
+                      <div 
+                        class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                        :class="hostingMode === 'none' ? 'bg-emerald-500 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'"
+                      >
+                        <ShieldCheck class="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
+                          <span>Server Disediakan Mandiri oleh Klien</span>
+                          <span v-if="hostingMode === 'none'" class="px-2 py-0.5 rounded-md bg-emerald-500 text-white text-[10px] font-extrabold">Aktif</span>
+                        </div>
+                        <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                          Klien sudah memiliki infrastruktur sendiri (VPS / cPanel). Tidak ada biaya sewa server dari tim pengembang.
+                        </div>
+                      </div>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <span class="text-xs font-black text-slate-900 dark:text-white">Rp 0</span>
+                    </div>
+                  </div>
 
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
-                <!-- Card 1: Client & Model -->
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-                  <div class="text-[10px] font-extrabold text-slate-400 uppercase">Klien & Model Pembayaran</div>
-                  <div class="font-black text-slate-900 dark:text-white text-sm">{{ form.client_name || 'Belum diisi' }}</div>
-                  <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">
-                    {{ form.project_category }} &bull; {{ form.estimated_timeline }}
-                  </div>
-                  <div class="text-[11px] text-slate-600 dark:text-slate-300">
-                    Skema: <span class="font-bold">{{ form.billing_type === 'subscription' ? 'SaaS Berlangganan' : 'Beli Putus (One-Off)' }}</span>
-                  </div>
-                  <div v-if="form.billing_type === 'subscription'" class="text-[11px] text-slate-500">
-                    Siklus: {{ form.billing_cycle === 'yearly' ? 'Tahunan (Yearly)' : 'Bulanan (Monthly)' }} &bull; Durasi: {{ form.subscription_duration }} {{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }}
-                  </div>
-                  <div v-else class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                    Garansi SLA: {{ form.maintenance_months }} Bulan Gratis
-                  </div>
-                </div>
+                  <!-- Option 2: Sediakan Layanan Server Hosting Kustom -->
+                  <div
+                    class="p-5 rounded-2xl border-2 transition-all space-y-4"
+                    :class="hostingMode !== 'none' 
+                      ? 'border-indigo-500 bg-indigo-50/20 dark:bg-indigo-950/20 shadow-xs' 
+                      : 'border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900'"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-3">
+                        <div 
+                          class="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                          :class="hostingMode !== 'none' ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'"
+                        >
+                          <Cloud class="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div class="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
+                            <span>Sewa & Konfigurasi Server Hosting</span>
+                            <span v-if="hostingMode !== 'none'" class="px-2 py-0.5 rounded-md bg-indigo-600 text-white text-[10px] font-extrabold">Aktif</span>
+                          </div>
+                          <div class="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                            Pilih jenis infrastruktur hosting yang akan dimasukkan ke dalam rincian penawaran.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                <!-- Card 2: Modules & Server -->
-                <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
-                  <div class="text-[10px] font-extrabold text-slate-400 uppercase">Lingkup Fitur & Server</div>
-                  <div class="font-black text-slate-900 dark:text-white">
-                    {{ form.items.filter(i => !isHostingModule(i)).length }} Modul Software ({{ formatRupiah(softwareItemsTotal) }})
-                  </div>
-                  <div class="text-[11px] text-slate-600 dark:text-slate-300">
-                    Hosting: <span class="font-bold">{{ currentHostingItem ? currentHostingItem.item_name : 'Server Disediakan Klien (Rp 0)' }}</span>
-                  </div>
-                  <div v-if="form.setup_fee > 0" class="text-[11px] text-slate-500">
-                    Setup Fee: {{ formatRupiah(form.setup_fee) }}
+                    <!-- Infrastructure Type Switcher: Shared Hosting vs Cloud VPS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <!-- Shared Hosting Option -->
+                      <button
+                        type="button"
+                        @click="setHostingMode('shared')"
+                        class="p-4 rounded-xl border-2 text-left transition-all cursor-pointer space-y-2"
+                        :class="hostingMode === 'shared' 
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/70 text-indigo-950 dark:text-indigo-100 shadow-xs' 
+                          : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-slate-300 text-slate-700 dark:text-slate-300'"
+                      >
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-black flex items-center gap-1.5">
+                            <span>🌐 Shared Hosting / cPanel</span>
+                          </span>
+                          <span v-if="hostingMode === 'shared'" class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                          Cocok untuk Landing Page, Company Profile, Blog, atau Toko Online UMKM standar.
+                        </p>
+                      </button>
+
+                      <!-- Cloud VPS Option -->
+                      <button
+                        type="button"
+                        @click="setHostingMode('vps')"
+                        class="p-4 rounded-xl border-2 text-left transition-all cursor-pointer space-y-2"
+                        :class="hostingMode === 'vps' 
+                          ? 'border-indigo-600 bg-indigo-50 dark:bg-indigo-950/70 text-indigo-950 dark:text-indigo-100 shadow-xs' 
+                          : 'border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/80 hover:border-slate-300 text-slate-700 dark:text-slate-300'"
+                      >
+                        <div class="flex items-center justify-between">
+                          <span class="text-xs font-black flex items-center gap-1.5">
+                            <span>🚀 Cloud VPS / Dedicated Server</span>
+                          </span>
+                          <span v-if="hostingMode === 'vps'" class="w-2.5 h-2.5 rounded-full bg-indigo-600"></span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+                          Server mandiri (Linux Ubuntu + Nginx / Docker) untuk Web App SaaS & sistem dinamis.
+                        </p>
+                      </button>
+                    </div>
+
+                    <!-- Custom Hosting Details Form (if active) -->
+                    <div v-if="currentHostingItem" class="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-indigo-100 dark:border-indigo-900/60 space-y-4 mt-2 shadow-xs">
+                      <div class="flex items-center justify-between flex-wrap gap-2">
+                        <div class="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+                          <Sparkles class="w-3.5 h-3.5 text-indigo-500" />
+                          <span>Rincian Nama & Biaya Server:</span>
+                        </div>
+                        <span class="text-[11px] font-semibold text-slate-400">
+                          Perhitungan Biaya Berdasarkan Tarif Bulanan
+                        </span>
+                      </div>
+
+                      <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        <div class="md:col-span-1 space-y-1">
+                          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Nama Layanan / Spesifikasi Server *</label>
+                          <input
+                            v-model="currentHostingItem.item_name"
+                            type="text"
+                            required
+                            placeholder="e.g. Hostinger paket A / Cloud VPS 2 vCPU 4GB RAM"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                          />
+                        </div>
+
+                        <div class="space-y-1">
+                          <CurrencyInput
+                            v-model="hostingMonthlyRate"
+                            label="Tarif Sewa Server / Bulan *"
+                          />
+                        </div>
+
+                        <div class="space-y-1">
+                          <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            Durasi Sewa Server (Bulan) *
+                          </label>
+                          <!-- Dropdown for One-Off: 12, 24, 48 Bulan -->
+                          <select
+                            v-if="form.billing_type === 'one_off'"
+                            v-model.number="hostingDurationMonths"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white cursor-pointer"
+                          >
+                            <option :value="12">12 Bulan (1 Tahun)</option>
+                            <option :value="24">24 Bulan (2 Tahun)</option>
+                            <option :value="48">48 Bulan (4 Tahun)</option>
+                          </select>
+
+                          <!-- Auto-synced display for Subscription -->
+                          <div
+                            v-else
+                            class="px-3.5 py-2.5 bg-slate-100 dark:bg-slate-800/80 border border-slate-300 dark:border-slate-700 rounded-xl text-slate-700 dark:text-slate-200 text-xs font-bold flex items-center justify-between"
+                            title="Durasi sewa server otomatis mengikuti masa komitmen kontrak SaaS"
+                          >
+                            <span>{{ hostingDurationMonths }} Bulan</span>
+                            <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-300 font-extrabold">
+                              Mengikuti SaaS
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <!-- Live Monthly Math Banner -->
+                      <div class="p-3.5 rounded-xl bg-indigo-50/80 dark:bg-indigo-950/60 border border-indigo-200/80 dark:border-indigo-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div class="flex items-center gap-2">
+                          <Calculator class="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                          <span class="text-slate-600 dark:text-slate-300">
+                            Rumus Perhitungan: <b>{{ formatRupiah(hostingMonthlyRate) }} / bln</b> &times; <b>{{ hostingDurationMonths }} Bulan</b>
+                          </span>
+                        </div>
+                        <div class="text-right font-black text-indigo-700 dark:text-indigo-300 text-xs">
+                          Subtotal Biaya Server: {{ formatRupiah(hostingCalculationText?.total || 0) }}
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <!-- Step 4 Navigation Buttons -->
-            <div class="flex justify-between items-center pt-5 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                @click="prevStep"
-                class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
-              >
-                <ArrowLeft class="w-4 h-4" />
-                <span>Kembali ke Step 3</span>
-              </button>
+              <!-- Bagian 3: Catatan Penawaran / Scope Notes -->
+              <div class="space-y-1.5">
+                <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Catatan Penawaran / Scope Notes (Opsional)</label>
+                <textarea
+                  v-model="form.notes"
+                  rows="3"
+                  placeholder="Tuliskan catatan syarat & ketentuan khusus, batasan garansi, atau ruang lingkup yang akan dicetak pada surat penawaran."
+                  class="w-full px-3.5 py-2.5 text-xs font-semibold bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700/80 rounded-xl focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-white transition"
+                ></textarea>
+              </div>
 
-              <div class="flex items-center gap-2.5">
+              <!-- Bagian 4: Final Review Summary Cards -->
+              <div class="space-y-3 pt-2">
+                <h4 class="text-xs font-extrabold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                  Ringkasan Rekapitulasi Penawaran:
+                </h4>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 text-xs">
+                  <!-- Card 1: Client & Model -->
+                  <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase">Klien & Model Pembayaran</div>
+                    <div class="font-black text-slate-900 dark:text-white text-sm">{{ form.client_name || 'Belum diisi' }}</div>
+                    <div class="text-[11px] text-indigo-600 dark:text-indigo-400 font-bold">
+                      {{ form.project_category }} &bull; {{ form.estimated_timeline }}
+                    </div>
+                    <div class="text-[11px] text-slate-600 dark:text-slate-300">
+                      Skema: <span class="font-bold">{{ form.billing_type === 'subscription' ? 'SaaS Berlangganan' : 'Beli Putus (One-Off)' }}</span>
+                    </div>
+                    <div v-if="form.billing_type === 'subscription'" class="text-[11px] text-slate-500">
+                      Siklus: {{ form.billing_cycle === 'yearly' ? 'Tahunan (Yearly)' : 'Bulanan (Monthly)' }} &bull; Durasi: {{ form.subscription_duration }} {{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }}
+                    </div>
+                    <div v-else class="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                      Garansi SLA: {{ form.maintenance_months }} Bulan Gratis
+                    </div>
+                  </div>
+
+                  <!-- Card 2: Modules & Server -->
+                  <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
+                    <div class="text-[10px] font-extrabold text-slate-400 uppercase">Lingkup Fitur & Server</div>
+                    <div class="font-black text-slate-900 dark:text-white">
+                      {{ form.items.filter(i => !isHostingModule(i)).length }} Modul Software ({{ formatRupiah(softwareItemsTotal) }})
+                    </div>
+                    <div class="text-[11px] text-slate-600 dark:text-slate-300 space-y-0.5">
+                      <div>Hosting: <span class="font-bold">{{ currentHostingItem ? currentHostingItem.item_name : 'Server Disediakan Klien (Rp 0)' }}</span></div>
+                      <div v-if="currentHostingItem && hostingCalculationText" class="text-indigo-600 dark:text-indigo-400 font-bold text-[10.5px]">
+                        Kalkulasi: {{ hostingCalculationText.formatted }}
+                      </div>
+                    </div>
+                    <div v-if="form.setup_fee > 0" class="text-[11px] text-slate-500">
+                      Setup Fee: {{ formatRupiah(form.setup_fee) }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Step 3 Navigation & Submission Buttons -->
+              <div class="flex justify-between items-center pt-5 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
-                  @click="submit('Draft')"
-                  :disabled="form.processing"
-                  class="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
+                  @click="prevStep"
+                  class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
                 >
-                  <Clock class="w-4 h-4 text-amber-500" />
-                  <span>Simpan Draft</span>
+                  <ArrowLeft class="w-4 h-4" />
+                  <span>Kembali ke Step 2</span>
                 </button>
 
-                <button
-                  type="button"
-                  @click="submit('Generated')"
-                  :disabled="form.processing"
-                  class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/30 transition flex items-center gap-2 cursor-pointer active:scale-98"
-                >
-                  <CheckCircle2 class="w-4 h-4 text-emerald-400" />
-                  <span>Simpan Perubahan</span>
-                </button>
+                <div class="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    @click="submit('Draft')"
+                    :disabled="form.processing"
+                    class="px-4.5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-2xl transition flex items-center gap-2 cursor-pointer"
+                  >
+                    <Clock class="w-4 h-4 text-amber-500" />
+                    <span>Simpan Draft</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    @click="submit('Generated')"
+                    :disabled="form.processing"
+                    class="px-6 py-3 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/30 transition flex items-center gap-2 cursor-pointer active:scale-98"
+                  >
+                    <CheckCircle2 class="w-4 h-4 text-emerald-400" />
+                    <span>Simpan Perubahan</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
         </div>
 
@@ -1143,72 +1304,89 @@ function submit(targetStatus) {
                 <span class="font-bold text-slate-900 dark:text-white" v-else>{{ formatRupiah(softwareItemsTotal) }}</span>
               </div>
 
-              <div class="flex justify-between items-center text-slate-600 dark:text-slate-300">
-                <span class="text-slate-500 dark:text-slate-400">Infrastruktur Server/Hosting:</span>
-                <span class="font-bold" :class="hostingItemsTotal > 0 ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400'">
-                  {{ hostingItemsTotal > 0 ? formatRupiah(hostingItemsTotal) : 'Server Klien (Rp 0)' }}
-                </span>
+              <!-- Lisensi User (SaaS Per-User / Hybrid) -->
+              <div v-if="form.billing_type === 'subscription' && (form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid')" class="flex justify-between items-center text-slate-600 dark:text-slate-300">
+                <span class="text-slate-500 dark:text-slate-400">Lisensi ({{ form.user_count }} User):</span>
+                <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(userRecurringTotal) }} / {{ form.billing_cycle === 'yearly' ? 'thn' : 'bln' }}</span>
               </div>
 
+              <!-- Infrastruktur Server -->
+              <div class="flex justify-between items-start text-slate-600 dark:text-slate-300">
+                <div class="space-y-0.5">
+                  <span class="text-slate-500 dark:text-slate-400 block">Infrastruktur Server/Hosting:</span>
+                  <span v-if="currentHostingItem && hostingCalculationText" class="text-[10px] text-slate-400 block font-sans">
+                    {{ currentHostingItem.item_name }} ({{ formatRupiah(hostingMonthlyRate) }}/bln &times; {{ hostingDurationMonths }} bln)
+                  </span>
+                </div>
+                <div class="text-right shrink-0">
+                  <span class="font-bold block" :class="hostingDurationTotal > 0 ? 'text-slate-900 dark:text-white' : 'text-slate-400'">
+                    {{ hostingDurationTotal > 0 ? formatRupiah(hostingDurationTotal) : 'Server Klien (Rp 0)' }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- SaaS Subtotal, Diskon & Tagihan Bersih -->
               <template v-if="form.billing_type === 'subscription'">
-                <div v-if="form.subscription_basis === 'per_user' || form.subscription_basis === 'hybrid'" class="flex justify-between items-center text-slate-600 dark:text-slate-300">
-                  <span class="text-slate-500 dark:text-slate-400">Lisensi ({{ form.user_count }} User):</span>
-                  <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(userRecurringTotal) }} / {{ form.billing_cycle === 'yearly' ? 'thn' : 'bln' }}</span>
-                </div>
+                <!-- If annual discount applied: show Subtotal Normal -> Diskon -> Biaya Bersih -->
+                <template v-if="form.billing_cycle === 'yearly' && form.apply_annual_discount && annualSavings > 0">
+                  <div class="flex justify-between items-center text-slate-500 dark:text-slate-400 pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800">
+                    <span>Subtotal Biaya Tahunan:</span>
+                    <span class="font-bold text-slate-700 dark:text-slate-300">{{ formatRupiah(monthlyBaseRecurring * 12) }} / thn</span>
+                  </div>
 
-                <div class="flex justify-between items-center text-indigo-600 dark:text-indigo-300 font-semibold pt-1">
-                  <span>Biaya Berulang ({{ form.billing_cycle === 'yearly' ? 'Tahunan' : 'Bulanan' }}):</span>
-                  <span class="font-black text-slate-900 dark:text-white">{{ formatRupiah(recurringPerCycle) }} / {{ form.billing_cycle === 'yearly' ? 'thn' : 'bln' }}</span>
-                </div>
+                  <div class="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-bold">
+                    <span>Diskon Tahunan ({{ form.discount_percentage || 20 }}% OFF):</span>
+                    <span>-{{ formatRupiah(annualSavings) }} / thn</span>
+                  </div>
 
-                <div v-if="form.billing_cycle === 'yearly' && form.apply_annual_discount && annualSavings > 0" class="flex justify-between items-center text-emerald-600 dark:text-emerald-400 font-bold">
-                  <span>Diskon Tahunan ({{ form.discount_percentage || 20 }}% OFF):</span>
-                  <span>-{{ formatRupiah(annualSavings) }}</span>
-                </div>
+                  <div class="flex justify-between items-center text-indigo-600 dark:text-indigo-300 font-extrabold pb-0.5">
+                    <span>Biaya Tagihan Tahunan:</span>
+                    <span class="font-black text-slate-900 dark:text-white">{{ formatRupiah(recurringPerCycle) }} / thn</span>
+                  </div>
+                </template>
+
+                <!-- If monthly or no discount -->
+                <template v-else>
+                  <div class="flex justify-between items-center text-indigo-600 dark:text-indigo-300 font-semibold pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800">
+                    <span>Biaya Berulang ({{ form.billing_cycle === 'yearly' ? 'Tahunan' : 'Bulanan' }}):</span>
+                    <span class="font-black text-slate-900 dark:text-white">{{ formatRupiah(recurringPerCycle) }} / {{ form.billing_cycle === 'yearly' ? 'thn' : 'bln' }}</span>
+                  </div>
+                </template>
 
                 <div v-if="form.setup_fee > 0" class="flex justify-between items-center text-slate-600 dark:text-slate-300">
                   <span class="text-slate-500 dark:text-slate-400">Biaya Setup / Onboarding:</span>
                   <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(form.setup_fee) }}</span>
                 </div>
 
-                <div class="flex justify-between items-center text-slate-600 dark:text-slate-300">
+                <div class="flex justify-between items-center text-slate-600 dark:text-slate-300 pt-0.5">
                   <span class="text-slate-500 dark:text-slate-400">Durasi Komitmen:</span>
                   <span class="font-bold text-slate-900 dark:text-white">{{ form.subscription_duration }} {{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }}</span>
                 </div>
               </template>
 
-              <div class="flex justify-between items-center text-slate-600 dark:text-slate-300 pt-1">
-                <span class="text-slate-500 dark:text-slate-400 flex items-center gap-1">
-                  <ShieldCheck class="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                  <span>Garansi SLA:</span>
-                </span>
-                <span class="font-bold text-emerald-600 dark:text-emerald-400">
-                  {{ form.billing_type === 'subscription' ? (form.subscription_duration + ' ' + (form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan')) : (form.maintenance_months + ' Bulan Gratis') }}
-                </span>
-              </div>
+              <!-- One-off Setup Fee -->
+              <template v-else>
+                <div v-if="form.setup_fee > 0" class="flex justify-between items-center text-slate-600 dark:text-slate-300 pt-1.5 border-t border-dashed border-slate-200 dark:border-slate-800">
+                  <span class="text-slate-500 dark:text-slate-400">Biaya Setup / Onboarding:</span>
+                  <span class="font-bold text-slate-900 dark:text-white">{{ formatRupiah(form.setup_fee) }}</span>
+                </div>
+              </template>
             </div>
 
-            <!-- Action Buttons in Sidebar -->
-            <div class="space-y-2.5 pt-4 border-t border-slate-200 dark:border-slate-800">
-              <button
-                type="button"
-                @click="submit('Draft')"
-                :disabled="form.processing"
-                class="w-full px-5 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800/90 dark:hover:bg-slate-800 text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white font-bold text-xs rounded-2xl transition duration-150 flex items-center justify-center gap-2 border border-slate-300 dark:border-slate-700/60 cursor-pointer active:scale-98"
-              >
-                <Clock class="w-4 h-4 text-amber-500 dark:text-amber-400" />
-                <span>Simpan Sebagai Draft</span>
-              </button>
-
-              <button
-                type="button"
-                @click="submit('Generated')"
-                :disabled="form.processing"
-                class="w-full px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-600 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-indigo-500/30 transition duration-150 flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-              >
-                <CheckCircle2 class="w-4 h-4 text-emerald-400" />
-                <span>Simpan Perubahan</span>
-              </button>
+            <!-- Prominent SLA Guarantee Information Card in Sidebar -->
+            <div class="p-4.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/80 space-y-2">
+              <div class="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-extrabold text-xs">
+                <ShieldCheck class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                <span>Jaminan Garansi & SLA</span>
+              </div>
+              <div class="text-[11px] text-emerald-800 dark:text-emerald-200/90 leading-relaxed font-medium">
+                <template v-if="form.billing_type === 'subscription'">
+                  Dukungan teknis, pemeliharaan sistem, & garansi SLA <b>aktif penuh selama {{ form.subscription_duration }} {{ form.billing_cycle === 'yearly' ? 'Tahun' : 'Bulan' }}</b> masa kontrak langganan SaaS.
+                </template>
+                <template v-else>
+                  Garansi perbaikan bug & pendampingan teknis gratis selama <b>{{ form.maintenance_months }} Bulan</b> pasca serah terima proyek.
+                </template>
+              </div>
             </div>
 
           </div>
