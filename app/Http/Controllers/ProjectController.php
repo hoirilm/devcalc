@@ -116,7 +116,7 @@ class ProjectController extends Controller
             'user_count' => 'required_if:subscription_basis,per_user,hybrid|integer|min:1',
             'price_per_user' => 'required_if:subscription_basis,per_user,hybrid|numeric|min:0',
             'setup_fee' => 'nullable|numeric|min:0',
-            'maintenance_months' => 'required_if:billing_type,one_off|nullable|integer',
+            'maintenance_months' => 'nullable|integer',
             'status' => 'required|in:Draft,Generated',
             'notes' => 'nullable|string',
             'items' => 'required|array|min:1',
@@ -179,10 +179,38 @@ class ProjectController extends Controller
 
         $project->recalculateGrandTotal();
 
-        // Update Deal value & add activity if deal is linked
-        if ($project->deal_id && $deal = Deal::find($project->deal_id)) {
+        // Auto-create or sync Deal in Kanban
+        if (!$project->deal_id) {
+            $dealStage = $project->status === 'Draft' ? 'scoping' : 'proposal_sent';
+            $dealProb = $dealStage === 'scoping' ? 30 : 60;
+            $dealTitle = ($project->project_category ? $project->project_category . ' - ' : 'Pengembangan Sistem - ') . $project->client_name;
+
+            $deal = Deal::create([
+                'user_id' => auth()->id() ?? 1,
+                'client_id' => $project->client_id,
+                'title' => $dealTitle,
+                'stage' => $dealStage,
+                'expected_value' => $project->grand_total,
+                'probability' => $dealProb,
+                'expected_close_date' => now()->addDays(14),
+                'notes' => "Dibuat otomatis dari Penawaran CPQ #" . $project->getQuotationCode(),
+            ]);
+
+            $project->deal_id = $deal->id;
+            $project->saveQuietly();
+
+            DealActivity::create([
+                'deal_id' => $deal->id,
+                'client_id' => $deal->client_id,
+                'user_id' => auth()->id() ?? 1,
+                'type' => 'note',
+                'title' => "Peluang Deal Otomatis Terbit (#{$project->getQuotationCode()})",
+                'description' => "Penawaran senilai Rp " . number_format($project->grand_total, 0, ',', '.') . " berhasil dihitung dan otomatis dimasukkan ke Kanban ({$dealStage}).",
+                'performed_at' => now(),
+            ]);
+        } else if ($deal = Deal::find($project->deal_id)) {
             $deal->expected_value = $project->grand_total;
-            if ($project->status === 'Generated' && in_array($deal->stage, ['discovery', 'scoping'])) {
+            if ($project->status === 'Generated' && in_array($deal->stage, ['scoping'])) {
                 $deal->stage = 'proposal_sent';
                 $deal->probability = 60;
             }
@@ -308,9 +336,16 @@ class ProjectController extends Controller
 
         $project->recalculateGrandTotal();
 
-        // Update Deal value if linked
+        // Update Deal value and stage if linked
         if ($project->deal_id && $deal = Deal::find($project->deal_id)) {
             $deal->expected_value = $project->grand_total;
+            if ($project->status === 'Generated' && $deal->stage === 'scoping') {
+                $deal->stage = 'proposal_sent';
+                $deal->probability = 60;
+            } elseif ($project->status === 'Draft' && $deal->stage === 'proposal_sent') {
+                $deal->stage = 'scoping';
+                $deal->probability = 30;
+            }
             $deal->save();
         }
 
@@ -320,7 +355,16 @@ class ProjectController extends Controller
     public function destroy(Project $project)
     {
         $code = $project->getQuotationCode();
+        $dealId = $project->deal_id;
+
         $project->delete();
+
+        // Hapus deal di Kanban jika sudah tidak memiliki dokumen penawaran tersisa
+        if ($dealId && $deal = Deal::find($dealId)) {
+            if ($deal->projects()->count() === 0) {
+                $deal->delete();
+            }
+        }
 
         return redirect()->back()->with('success', "Penawaran #{$code} berhasil dihapus.");
     }
@@ -332,8 +376,20 @@ class ProjectController extends Controller
             'ids.*' => 'exists:projects,id',
         ]);
 
-        $count = count($validated['ids']);
+        $projects = Project::whereIn('id', $validated['ids'])->get();
+        $dealIds = $projects->pluck('deal_id')->filter()->unique();
+        $count = $projects->count();
+
         Project::whereIn('id', $validated['ids'])->delete();
+
+        // Hapus deal yang sudah tidak memiliki penawaran tersisa
+        foreach ($dealIds as $dealId) {
+            if ($deal = Deal::find($dealId)) {
+                if ($deal->projects()->count() === 0) {
+                    $deal->delete();
+                }
+            }
+        }
 
         return redirect()->back()->with('success', "{$count} dokumen penawaran harga berhasil dihapus.");
     }

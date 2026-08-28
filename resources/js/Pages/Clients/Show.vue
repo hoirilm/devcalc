@@ -57,7 +57,6 @@ const props = defineProps({
 });
 
 const isAddContactModalOpen = ref(false);
-const isAddDealModalOpen = ref(false);
 const isEditClientModalOpen = ref(false);
 
 const contactForm = ref({
@@ -66,15 +65,6 @@ const contactForm = ref({
   email: '',
   phone: '',
   is_primary: false,
-  notes: '',
-});
-
-const dealForm = ref({
-  title: '',
-  stage: 'discovery',
-  expected_value: 0,
-  probability: 20,
-  expected_close_date: '',
   notes: '',
 });
 
@@ -109,18 +99,6 @@ function deleteContact(contactId) {
   if (confirm('Hapus kontak PIC ini?')) {
     router.delete(`/contacts/${contactId}`);
   }
-}
-
-function submitAddDeal() {
-  router.post('/deals', {
-    ...dealForm.value,
-    client_id: props.client.id,
-  }, {
-    onSuccess: () => {
-      isAddDealModalOpen.value = false;
-      dealForm.value = { title: '', stage: 'discovery', expected_value: 0, probability: 20, expected_close_date: '', notes: '' };
-    }
-  });
 }
 
 function submitActivity() {
@@ -200,7 +178,7 @@ function getActivityIconClass(type) {
             class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 transition flex items-center gap-1.5"
           >
             <FileText class="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>+ Buat Penawaran DevCalc</span>
+            <span>Buat Penawaran DevCalc</span>
           </Link>
         </div>
       </div>
@@ -361,12 +339,13 @@ function getActivityIconClass(type) {
                 <h2 class="text-sm font-black text-slate-900 dark:text-white">Peluang Proyek & Deals ({{ deals.length }})</h2>
               </div>
 
-              <button
-                @click="isAddDealModalOpen = true"
-                class="px-3 py-1 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 text-xs font-bold hover:bg-purple-100 transition"
+              <Link
+                :href="`/projects/create?client_id=${client.id}`"
+                class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
               >
-                + Tambah Deal
-              </button>
+                <Plus class="w-3.5 h-3.5 stroke-[3]" />
+                <span>Buat Penawaran CPQ</span>
+              </Link>
             </div>
 
             <!-- List Deals -->
@@ -658,87 +637,6 @@ function getActivityIconClass(type) {
               class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold shadow-md hover:bg-indigo-700"
             >
               Simpan PIC
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <!-- MODAL TAMBAH DEAL BARU -->
-    <div
-      v-if="isAddDealModalOpen"
-      class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4"
-      @click.self="isAddDealModalOpen = false"
-    >
-      <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-sm font-black text-slate-900 dark:text-white">Tambah Peluang Proyek (Deal)</h3>
-          <button @click="isAddDealModalOpen = false" class="text-slate-400 hover:text-slate-600">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
-
-        <form @submit.prevent="submitAddDeal" class="space-y-3">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Proyek / Deal *</label>
-            <input
-              v-model="dealForm.title"
-              type="text"
-              required
-              placeholder="misal: Pengembangan Web E-Commerce V2"
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-            />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Stage Pipeline</label>
-              <select
-                v-model="dealForm.stage"
-                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                <option value="discovery">Discovery</option>
-                <option value="scoping">Scoping Requirement</option>
-                <option value="proposal_sent">Proposal Sent</option>
-                <option value="negotiation">Negotiation</option>
-                <option value="won">Deal Won</option>
-                <option value="lost">Deal Lost</option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Estimasi Nilai (Rp)</label>
-              <input
-                v-model="dealForm.expected_value"
-                type="number"
-                min="0"
-                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Target Closing</label>
-            <input
-              v-model="dealForm.expected_close_date"
-              type="date"
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-            />
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              @click="isAddDealModalOpen = false"
-              class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 rounded-xl bg-purple-600 text-white text-xs font-extrabold shadow-md hover:bg-purple-700"
-            >
-              Simpan Deal
             </button>
           </div>
         </form>

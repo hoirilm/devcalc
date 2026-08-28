@@ -143,14 +143,14 @@ class DealController extends Controller
         $validated = $request->validate([
             'client_id' => 'required|exists:clients,id',
             'title' => 'required|string|max:255',
-            'stage' => 'required|in:discovery,scoping,proposal_sent,negotiation,won,lost',
+            'stage' => 'required|in:scoping,proposal_sent,negotiation,won,lost',
             'expected_value' => 'required|numeric|min:0',
             'probability' => 'nullable|integer|min:0|max:100',
             'expected_close_date' => 'nullable|date',
             'notes' => 'nullable|string',
         ]);
 
-        $stageConfig = Deal::STAGES[$validated['stage']] ?? ['probability' => 20];
+        $stageConfig = Deal::STAGES[$validated['stage']] ?? ['probability' => 30];
         $prob = $validated['probability'] ?? $stageConfig['probability'];
 
         $deal = Deal::create([
@@ -182,7 +182,7 @@ class DealController extends Controller
     {
         $validated = $request->validate([
             'title' => 'required|string|max:255',
-            'stage' => 'required|in:discovery,scoping,proposal_sent,negotiation,won,lost',
+            'stage' => 'required|in:scoping,proposal_sent,negotiation,won,lost',
             'expected_value' => 'required|numeric|min:0',
             'probability' => 'nullable|integer|min:0|max:100',
             'expected_close_date' => 'nullable|date',
@@ -198,7 +198,7 @@ class DealController extends Controller
     public function updateStage(Request $request, Deal $deal)
     {
         $validated = $request->validate([
-            'stage' => 'required|in:discovery,scoping,proposal_sent,negotiation,won,lost',
+            'stage' => 'required|in:scoping,proposal_sent,negotiation,won,lost',
             'lost_reason' => 'nullable|string',
         ]);
 
@@ -215,6 +215,13 @@ class DealController extends Controller
             $deal->lost_reason = null;
         }
         $deal->save();
+
+        // Sinkronisasi dua arah dengan status Penawaran (Projects)
+        if ($newStage === 'scoping') {
+            $deal->projects()->where('status', '!=', 'Draft')->update(['status' => 'Draft']);
+        } elseif (in_array($newStage, ['proposal_sent', 'negotiation', 'won'])) {
+            $deal->projects()->where('status', '!=', 'Generated')->update(['status' => 'Generated']);
+        }
 
         // Catat activity perubahan stage
         DealActivity::create([

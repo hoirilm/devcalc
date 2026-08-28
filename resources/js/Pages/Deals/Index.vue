@@ -70,27 +70,16 @@ const activeClient = computed(() => {
   return props.clients.find(c => String(c.id) === String(selectedClientId.value));
 });
 
-const isAddDealModalOpen = ref(false);
 const isEditDealModalOpen = ref(false);
 const isLostModalOpen = ref(false);
 const selectedDeal = ref(null);
 
-const dealForm = ref({
-  client_id: '',
-  title: '',
-  stage: 'discovery',
-  expected_value: 0,
-  probability: 20,
-  expected_close_date: '',
-  notes: '',
-});
-
 const editDealForm = ref({
   id: null,
   title: '',
-  stage: 'discovery',
+  stage: 'scoping',
   expected_value: 0,
-  probability: 20,
+  probability: 30,
   expected_close_date: '',
   notes: '',
 });
@@ -142,34 +131,6 @@ watch([search, selectedUserId, selectedClientId], () => {
   applyFilter();
 });
 
-function openAddDealModal(preselectedStage = 'discovery') {
-  dealForm.value = {
-    client_id: props.clients[0]?.id || '',
-    title: '',
-    stage: preselectedStage,
-    expected_value: 0,
-    probability: props.stagesConfig[preselectedStage]?.probability || 20,
-    expected_close_date: '',
-    notes: '',
-  };
-  isAddDealModalOpen.value = true;
-}
-
-function onStageChangeInForm() {
-  const stage = dealForm.value.stage;
-  if (props.stagesConfig[stage]) {
-    dealForm.value.probability = props.stagesConfig[stage].probability;
-  }
-}
-
-function submitAddDeal() {
-  router.post('/deals', dealForm.value, {
-    onSuccess: () => {
-      isAddDealModalOpen.value = false;
-    }
-  });
-}
-
 function openEditDealModal(deal) {
   selectedDeal.value = deal;
   editDealForm.value = {
@@ -200,38 +161,35 @@ function moveStage(deal, newStage) {
     return;
   }
 
-  router.patch(`/deals/${deal.id}/stage`, { stage: newStage });
+  router.patch(`/deals/${deal.id}/stage`, {
+    stage: newStage
+  }, {
+    preserveScroll: true
+  });
 }
 
-function submitMarkLost() {
+function submitLost() {
   const reason = lostForm.value.lost_reason === 'Lainnya' 
     ? lostForm.value.custom_reason 
     : lostForm.value.lost_reason;
 
   router.patch(`/deals/${lostForm.value.deal_id}/stage`, {
     stage: 'lost',
-    lost_reason: reason,
+    lost_reason: reason
   }, {
     onSuccess: () => {
       isLostModalOpen.value = false;
+      lostForm.value = { deal_id: null, lost_reason: 'Budget Klien Tidak Mencukupi', custom_reason: '' };
     }
   });
 }
 
-function deleteDeal(dealId) {
-  if (confirm('Hapus peluang deal ini?')) {
-    router.delete(`/deals/${dealId}`);
-  }
-}
-
 function getStageBgHeader(key) {
   switch (key) {
-    case 'discovery':
-      return 'border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-950/30';
     case 'scoping':
-      return 'border-blue-500/40 bg-blue-50/50 dark:bg-blue-950/30';
+      return 'border-indigo-500/40 bg-indigo-50/50 dark:bg-indigo-950/30';
     case 'proposal_sent':
-      return 'border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/30';
+      return 'border-blue-500/40 bg-blue-50/50 dark:bg-blue-950/30';
     case 'negotiation':
       return 'border-purple-500/40 bg-purple-50/50 dark:bg-purple-950/30';
     case 'won':
@@ -245,9 +203,8 @@ function getStageBgHeader(key) {
 
 function getStageDotColor(key) {
   switch (key) {
-    case 'discovery': return 'bg-indigo-500';
-    case 'scoping': return 'bg-blue-500';
-    case 'proposal_sent': return 'bg-amber-500';
+    case 'scoping': return 'bg-indigo-500';
+    case 'proposal_sent': return 'bg-blue-500';
     case 'negotiation': return 'bg-purple-500';
     case 'won': return 'bg-emerald-500';
     case 'lost': return 'bg-rose-500';
@@ -270,17 +227,17 @@ function getStageDotColor(key) {
             <span class="px-2 py-0.5 text-xs font-extrabold bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 rounded-lg border border-purple-200 dark:border-purple-800">Kanban Board</span>
           </div>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Pantau dan gerakkan deal penjualan mulai dari Discovery, Scoping, Pembuatan Penawaran DevCalc, Negosiasi, hingga Closed Won.
+            Pantau dan gerakkan peluang penjualan mulai dari Scoping & Draf, Proposal Terkirim, Negosiasi & Review, hingga Closed Won.
           </p>
         </div>
 
-        <button
-          @click="openAddDealModal('discovery')"
+        <Link
+          href="/projects/create"
           class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer active:scale-95 shrink-0"
         >
           <Plus class="w-4 h-4 stroke-[3]" />
-          <span>Tambah Deal Baru</span>
-        </button>
+          <span>Buat Penawaran (CPQ)</span>
+        </Link>
       </div>
 
       <!-- METRIC SUMMARY CARDS -->
@@ -427,14 +384,14 @@ function getStageDotColor(key) {
                 </span>
               </div>
 
-              <button
+              <Link
                 v-if="col.key !== 'lost' && col.key !== 'won'"
-                @click="openAddDealModal(col.key)"
+                href="/projects/create"
                 class="p-1 rounded-lg text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-800/50 transition cursor-pointer"
-                title="Tambah Deal di Stage Ini"
+                title="Buat Penawaran Baru (CPQ)"
               >
                 <Plus class="w-3.5 h-3.5 stroke-[3]" />
-              </button>
+              </Link>
             </div>
 
             <!-- Stage Subheader (Total Rp) -->
@@ -516,14 +473,25 @@ function getStageDotColor(key) {
                   <span v-else class="text-slate-300 dark:text-slate-600">Belum ada Quo</span>
                 </div>
 
-                <!-- Action: Create DevCalc Quotation directly -->
+                <!-- Action: View/Edit Quotation if exists, or Create DevCalc Quotation -->
                 <div class="pt-2 flex items-center gap-1.5">
                   <Link
-                    :href="`/projects/create?client_id=${deal.client.id}&deal_id=${deal.id}`"
+                    v-if="deal.latest_project_id"
+                    :href="`/projects/${deal.latest_project_id}/edit`"
                     class="flex-1 py-1.5 px-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-600 hover:text-white text-indigo-600 dark:text-indigo-400 font-extrabold text-[10px] transition text-center flex items-center justify-center gap-1"
+                    title="Buka / Edit Dokumen Penawaran CPQ"
                   >
                     <FileText class="w-3 h-3" />
-                    <span>+ Penawaran DevCalc</span>
+                    <span>Lihat / Edit Penawaran</span>
+                  </Link>
+                  <Link
+                    v-else
+                    :href="`/projects/create?client_id=${deal.client.id}&deal_id=${deal.id}`"
+                    class="flex-1 py-1.5 px-2 rounded-xl bg-indigo-50 dark:bg-indigo-950/70 hover:bg-indigo-600 hover:text-white text-indigo-600 dark:text-indigo-400 font-extrabold text-[10px] transition text-center flex items-center justify-center gap-1"
+                    title="Buat Penawaran CPQ Baru"
+                  >
+                    <FileText class="w-3 h-3" />
+                    <span>Buat Penawaran CPQ</span>
                   </Link>
                 </div>
 
@@ -559,124 +527,6 @@ function getStageDotColor(key) {
         </div>
       </div>
 
-    </div>
-
-    <!-- MODAL CREATE DEAL -->
-    <div
-      v-if="isAddDealModalOpen"
-      class="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4"
-      @click.self="isAddDealModalOpen = false"
-    >
-      <div class="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl p-6 space-y-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <Kanban class="w-4 h-4 text-purple-600" />
-            <h3 class="text-sm font-black text-slate-900 dark:text-white">Tambah Peluang Deal Baru</h3>
-          </div>
-          <button @click="isAddDealModalOpen = false" class="text-slate-400 hover:text-slate-600">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
-
-        <form @submit.prevent="submitAddDeal" class="space-y-3">
-          <div>
-            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Pilih Perusahaan Klien *</label>
-            <select
-              v-model="dealForm.client_id"
-              required
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-800 dark:text-slate-200"
-            >
-              <option v-for="c in clients" :key="c.id" :value="c.id">
-                {{ c.name }} ({{ c.industry || 'Klien' }})
-              </option>
-            </select>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Judul Proyek / Deal *</label>
-            <input
-              v-model="dealForm.title"
-              type="text"
-              required
-              placeholder="misal: Core Banking Integration & Mobile App"
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-            />
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Stage Awal</label>
-              <select
-                v-model="dealForm.stage"
-                @change="onStageChangeInForm"
-                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-300"
-              >
-                <option v-for="(sMeta, sKey) in stagesConfig" :key="sKey" :value="sKey">
-                  {{ sMeta.label }}
-                </option>
-              </select>
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Estimasi Nilai (Rp)</label>
-              <input
-                v-model="dealForm.expected_value"
-                type="number"
-                min="0"
-                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Probabilitas (%)</label>
-              <input
-                v-model="dealForm.probability"
-                type="number"
-                min="0"
-                max="100"
-                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-              />
-            </div>
-
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Target Closing</label>
-              <input
-                v-model="dealForm.expected_close_date"
-                type="date"
-                class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Catatan Kebutuhan</label>
-            <textarea
-              v-model="dealForm.notes"
-              rows="2"
-              placeholder="Catatan brief / kebutuhan sistem..."
-              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white"
-            ></textarea>
-          </div>
-
-          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              type="button"
-              @click="isAddDealModalOpen = false"
-              class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
-            >
-              Batal
-            </button>
-            <button
-              type="submit"
-              class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold shadow-md hover:bg-indigo-700"
-            >
-              Simpan Deal
-            </button>
-          </div>
-        </form>
-      </div>
     </div>
 
     <!-- MODAL EDIT DEAL -->
@@ -750,31 +600,20 @@ function getStageDotColor(key) {
             </div>
           </div>
 
-          <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-800">
+          <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-slate-800">
             <button
               type="button"
-              @click="deleteDeal(editDealForm.id)"
-              class="text-rose-600 hover:text-rose-700 text-xs font-bold flex items-center gap-1"
+              @click="isEditDealModalOpen = false"
+              class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
             >
-              <Trash2 class="w-3.5 h-3.5" />
-              <span>Hapus</span>
+              Batal
             </button>
-
-            <div class="flex items-center gap-2">
-              <button
-                type="button"
-                @click="isEditDealModalOpen = false"
-                class="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 rounded-xl"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold shadow-md hover:bg-indigo-700"
-              >
-                Perbarui
-              </button>
-            </div>
+            <button
+              type="submit"
+              class="px-4 py-2 rounded-xl bg-indigo-600 text-white text-xs font-extrabold shadow-md hover:bg-indigo-700 cursor-pointer"
+            >
+              Perbarui
+            </button>
           </div>
         </form>
       </div>

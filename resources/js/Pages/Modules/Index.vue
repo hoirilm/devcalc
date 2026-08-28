@@ -247,47 +247,7 @@ function confirmDeleteModule() {
         </div>
       </div>
 
-      <!-- Simple Notification Alert (Below Filter Card) -->
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 -translate-y-1 scale-98"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 -translate-y-1 scale-98"
-      >
-        <div
-          v-if="flashSuccess"
-          class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-3 shadow-sm"
-        >
-          <div class="flex items-center gap-2.5">
-            <CheckCircle2 class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span class="text-xs font-bold">{{ flashSuccess }}</span>
-          </div>
-          <button
-            @click="flashSuccess = ''"
-            class="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg transition cursor-pointer"
-          >
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
 
-        <div
-          v-else-if="flashError"
-          class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-200 flex items-center justify-between gap-3 shadow-sm"
-        >
-          <div class="flex items-center gap-2.5">
-            <AlertCircle class="w-4.5 h-4.5 text-rose-600 dark:text-rose-400 shrink-0" />
-            <span class="text-xs font-bold">{{ flashError }}</span>
-          </div>
-          <button
-            @click="flashError = ''"
-            class="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-lg transition cursor-pointer"
-          >
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </Transition>
 
       <!-- Modules Table -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">

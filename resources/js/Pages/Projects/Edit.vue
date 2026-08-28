@@ -149,7 +149,6 @@ const hostingCatalog = computed(() => {
   return (props.modules || []).filter(m => isHostingCategory(m.category));
 });
 
-// Step 2 Software Items
 function addSoftwareItem() {
   form.items.push({
     id: null,
@@ -158,6 +157,15 @@ function addSoftwareItem() {
     base_price: 0,
     complexity_weight: 1.0,
     is_hosting: false,
+  });
+  nextTick(() => {
+    const items = document.querySelectorAll('.software-item-card');
+    if (items.length) {
+      const lastItem = items[items.length - 1];
+      lastItem?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const firstInput = lastItem?.querySelector('select, input');
+      firstInput?.focus();
+    }
   });
 }
 
@@ -800,7 +808,7 @@ function submit(targetStatus) {
               <div
                 v-for="(item, index) in form.items.filter(i => !isHostingModule(i))"
                 :key="index"
-                class="p-5 rounded-3xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4 transition hover:border-indigo-200 dark:hover:border-indigo-900/60 shadow-2xs"
+                class="software-item-card p-5 rounded-3xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4 transition hover:border-indigo-200 dark:hover:border-indigo-900/60 shadow-2xs"
               >
                 <!-- Row 1: Header + Remove -->
                 <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
@@ -896,8 +904,8 @@ function submit(targetStatus) {
                 @click="addSoftwareItem"
                 class="w-full py-3.5 border-2 border-dashed border-indigo-200 dark:border-indigo-900/60 hover:border-indigo-400 dark:hover:border-indigo-700 rounded-2xl text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-99"
               >
-                <Plus class="w-4 h-4" />
-                <span>+ Tambah Fitur / Modul Baru</span>
+                <Plus class="w-4 h-4 stroke-[2.5]" />
+                <span>Tambah Fitur / Modul Baru</span>
               </button>
             </div>
 
@@ -1325,7 +1333,7 @@ function submit(targetStatus) {
         </div>
 
         <!-- Right Sticky Sidebar Column (Live Summary throughout all steps) -->
-        <div class="lg:col-span-4 sticky top-20 space-y-4">
+        <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-4 self-start">
           <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-800 space-y-6">
             
             <!-- Summary Header -->

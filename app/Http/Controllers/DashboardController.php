@@ -80,11 +80,12 @@ class DashboardController extends Controller
         ];
 
         // Recent Deals
-        $recentDeals = Deal::with(['client', 'user'])->latest()->take(5)->get()->map(function ($deal) {
+        $recentDeals = Deal::with(['client', 'user'])->latest()->take(6)->get()->map(function ($deal) {
             $stageInfo = $deal->getStageInfo();
             return [
                 'id' => $deal->id,
                 'title' => $deal->title,
+                'client_id' => $deal->client_id,
                 'client_name' => $deal->client->name ?? 'Unknown Client',
                 'stage' => $deal->stage,
                 'stage_label' => $stageInfo['label'],
@@ -93,6 +94,7 @@ class DashboardController extends Controller
                 'expected_value_formatted' => 'Rp ' . number_format($deal->expected_value, 0, ',', '.'),
                 'probability' => $deal->probability,
                 'sales_name' => $deal->user->name ?? 'Sales Rep',
+                'expected_close_date_formatted' => $deal->expected_close_date ? $deal->expected_close_date->format('d M Y') : '-',
             ];
         });
 

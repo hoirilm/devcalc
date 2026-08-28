@@ -374,7 +374,7 @@ const userRoleName = computed(() => {
     </div>
 
     <!-- Main Content Wrapper -->
-    <div class="flex-1 md:pl-64 flex flex-col min-h-screen min-w-0 overflow-x-hidden w-full">
+    <div class="flex-1 md:pl-64 flex flex-col min-h-screen min-w-0 overflow-x-clip w-full">
       
       <!-- ENTERPRISE TOP NAVBAR HEADER -->
       <header class="h-16 px-6 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 flex items-center justify-center">
@@ -427,7 +427,7 @@ const userRoleName = computed(() => {
       </header>
 
       <!-- Page Body Content -->
-      <main class="flex-1 p-4 sm:p-6 min-w-0 w-full overflow-x-hidden">
+      <main class="flex-1 p-4 sm:p-6 min-w-0 w-full overflow-x-clip">
         
         <!-- Flash Notification Message (Matches exact width of page body content) -->
         <div v-if="$page.props.flash?.success || $page.props.flash?.error" class="max-w-7xl mx-auto w-full mb-6">

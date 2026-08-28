@@ -163,7 +163,6 @@ const hostingCatalog = computed(() => {
   return (props.modules || []).filter(m => isHostingCategory(m.category));
 });
 
-// Step 2 Software Items
 function addSoftwareItem() {
   form.items.push({
     module_id: '',
@@ -171,6 +170,15 @@ function addSoftwareItem() {
     base_price: 0,
     complexity_weight: 1.0,
     is_hosting: false,
+  });
+  nextTick(() => {
+    const items = document.querySelectorAll('.software-item-card');
+    if (items.length) {
+      const lastItem = items[items.length - 1];
+      lastItem?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const firstInput = lastItem?.querySelector('select, input');
+      firstInput?.focus();
+    }
   });
 }
 
@@ -609,51 +617,34 @@ function submit(targetStatus) {
                   Masukkan identitas klien dan parameter umum proyek untuk penawaran ini.
                 </p>
               </div>
-              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Step 1 of 4</span>
+              <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Langkah 1 dari 3</span>
             </div>
 
             <div class="space-y-5">
-              <!-- CRM Integration: Select Client & Deal -->
+              <!-- CRM Integration: Select Client -->
               <div v-if="clients.length" class="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60 space-y-3">
                 <div class="flex items-center justify-between">
                   <span class="text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
                     <Sparkles class="w-3.5 h-3.5" />
-                    <span>Integrasi Database CRM</span>
+                    <span>Integrasi CRM & Pipeline Otomatis</span>
                   </span>
-                  <span class="text-[10px] text-slate-400">Pilih klien terdaftar atau ketik manual</span>
+                  <span class="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">⚡ Otomatis Tercatat di Kanban</span>
                 </div>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Pilih dari Klien CRM Terdaftar
-                    </label>
-                    <select
-                      :value="form.client_id"
-                      @change="onClientSelectChange"
-                      class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
-                    >
-                      <option value="">-- Ketik Nama Klien Manual --</option>
-                      <option v-for="c in clients" :key="c.id" :value="c.id">
-                        {{ c.name }} ({{ c.industry || 'Klien' }})
-                      </option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      Hubungkan ke Peluang Deal (Opsional)
-                    </label>
-                    <select
-                      v-model="form.deal_id"
-                      class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
-                    >
-                      <option value="">-- Tidak Terhubung ke Deal --</option>
-                      <option v-for="d in deals" :key="d.id" :value="d.id">
-                        {{ d.title }}
-                      </option>
-                    </select>
-                  </div>
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Pilih dari Direktori Klien B2B Terdaftar (Opsional)
+                  </label>
+                  <select
+                    :value="form.client_id"
+                    @change="onClientSelectChange"
+                    class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                  >
+                    <option value="">-- Ketik Nama Klien Baru Secara Manual --</option>
+                    <option v-for="c in clients" :key="c.id" :value="c.id">
+                      {{ c.name }} ({{ c.industry || 'Klien' }})
+                    </option>
+                  </select>
                 </div>
               </div>
 
@@ -780,7 +771,7 @@ function submit(targetStatus) {
               <div
                 v-for="(item, index) in form.items.filter(i => !isHostingModule(i))"
                 :key="index"
-                class="p-5 rounded-3xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4 transition hover:border-indigo-200 dark:hover:border-indigo-900/60 shadow-2xs"
+                class="software-item-card p-5 rounded-3xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 space-y-4 transition hover:border-indigo-200 dark:hover:border-indigo-900/60 shadow-2xs"
               >
                 <!-- Row 1: Header + Remove -->
                 <div class="flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-700/60">
@@ -876,8 +867,8 @@ function submit(targetStatus) {
                 @click="addSoftwareItem"
                 class="w-full py-3.5 border-2 border-dashed border-indigo-200 dark:border-indigo-900/60 hover:border-indigo-400 dark:hover:border-indigo-700 rounded-2xl text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 transition flex items-center justify-center gap-2 cursor-pointer active:scale-99"
               >
-                <Plus class="w-4 h-4" />
-                <span>+ Tambah Fitur / Modul Baru</span>
+                <Plus class="w-4 h-4 stroke-[2.5]" />
+                <span>Tambah Fitur / Modul Baru</span>
               </button>
             </div>
 
@@ -1305,7 +1296,7 @@ function submit(targetStatus) {
         </div>
 
         <!-- Right Sticky Sidebar Column (Live Summary throughout all steps) -->
-        <div class="lg:col-span-4 sticky top-20 space-y-4">
+        <div class="lg:col-span-4 lg:sticky lg:top-24 space-y-4 self-start">
           <div class="bg-white dark:bg-slate-900 text-slate-900 dark:text-white rounded-3xl p-6 shadow-xl border border-slate-200 dark:border-slate-800 space-y-6">
             
             <!-- Summary Header -->

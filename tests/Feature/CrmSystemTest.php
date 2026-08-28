@@ -75,9 +75,9 @@ class CrmSystemTest extends TestCase
             'user_id' => $this->sales->id,
             'client_id' => $client->id,
             'title' => 'Web App E-Commerce B2B',
-            'stage' => 'discovery',
+            'stage' => 'scoping',
             'expected_value' => 50000000.00,
-            'probability' => 15,
+            'probability' => 30,
         ]);
 
         // Pindah stage ke negotiation
@@ -180,7 +180,7 @@ class CrmSystemTest extends TestCase
             'user_id' => $this->sales->id,
             'client_id' => $clientA->id,
             'title' => 'Fleet Management System',
-            'stage' => 'discovery',
+            'stage' => 'scoping',
             'expected_value' => 75000000.00,
         ]);
 
@@ -214,7 +214,7 @@ class CrmSystemTest extends TestCase
         $responseDeal->assertOk();
         $responseDeal->assertInertia(fn ($page) => 
             $page->component('Deals/Index')
-                ->where('kanbanColumns.discovery.deals.0.title', 'Fleet Management System')
+                ->where('kanbanColumns.scoping.deals.0.title', 'Fleet Management System')
         );
 
         // Filter Deals berdasarkan user_id
@@ -225,4 +225,105 @@ class CrmSystemTest extends TestCase
                 ->where('kanbanColumns.negotiation.deals.0.title', 'Payment Gateway Integration')
         );
     }
+
+    public function test_creating_project_automatically_creates_deal_in_kanban(): void
+    {
+        $response = $this->actingAs($this->sales)->post('/projects', [
+            'client_name' => 'PT Surya Mega Cipta',
+            'billing_type' => 'one_off',
+            'status' => 'Generated',
+            'items' => [
+                [
+                    'module_id' => null,
+                    'item_name' => 'Custom ERP Backend',
+                    'base_price' => 30000000,
+                    'complexity_weight' => 1.0,
+                ]
+            ]
+        ]);
+
+        $response->assertRedirect();
+        
+        $deal = Deal::whereHas('client', function ($q) {
+            $q->where('name', 'PT Surya Mega Cipta');
+        })->first();
+
+        $this->assertNotNull($deal);
+        $this->assertEquals('proposal_sent', $deal->stage);
+        $this->assertEquals(60, $deal->probability);
+        $this->assertEquals(30000000.00, (float) $deal->expected_value);
+    }
+
+    public function test_deal_stage_and_project_status_two_way_synchronization(): void
+    {
+        // 1. Buat project Draft
+        $this->actingAs($this->sales)->post('/projects', [
+            'client_name' => 'PT Sinkronisasi Dua Arah',
+            'billing_type' => 'one_off',
+            'status' => 'Draft',
+            'items' => [
+                [
+                    'item_name' => 'Modul Inti',
+                    'base_price' => 10000000,
+                    'complexity_weight' => 1.0,
+                ]
+            ]
+        ]);
+
+        $project = Project::where('client_name', 'PT Sinkronisasi Dua Arah')->first();
+        $this->assertNotNull($project);
+        $this->assertEquals('Draft', $project->status);
+
+        $deal = Deal::where('id', $project->deal_id)->first();
+        $this->assertNotNull($deal);
+        $this->assertEquals('scoping', $deal->stage);
+
+        // 2. Pindahkan deal stage ke proposal_sent via PATCH /deals/{id}/stage
+        $this->actingAs($this->sales)->patch("/deals/{$deal->id}/stage", [
+            'stage' => 'proposal_sent',
+        ]);
+
+        $project->refresh();
+        $this->assertEquals('Generated', $project->status);
+
+        // 3. Pindahkan deal stage kembali ke scoping
+        $this->actingAs($this->sales)->patch("/deals/{$deal->id}/stage", [
+            'stage' => 'scoping',
+        ]);
+
+        $project->refresh();
+        $this->assertEquals('Draft', $project->status);
+    }
+
+    public function test_deleting_project_automatically_deletes_linked_deal(): void
+    {
+        // Buat project & deal otomatis
+        $this->actingAs($this->sales)->post('/projects', [
+            'client_name' => 'PT Hapus Project Deal',
+            'billing_type' => 'one_off',
+            'status' => 'Draft',
+            'items' => [
+                [
+                    'item_name' => 'Modul Alpha',
+                    'base_price' => 5000000,
+                    'complexity_weight' => 1.0,
+                ]
+            ]
+        ]);
+
+        $project = Project::where('client_name', 'PT Hapus Project Deal')->first();
+        $this->assertNotNull($project);
+        $dealId = $project->deal_id;
+        $this->assertNotNull($dealId);
+        $this->assertDatabaseHas('deals', ['id' => $dealId]);
+
+        // Hapus project
+        $response = $this->actingAs($this->sales)->delete("/projects/{$project->id}");
+        $response->assertRedirect();
+
+        // Pastikan project terhapus dan deal di kanban juga otomatis terhapus
+        $this->assertDatabaseMissing('projects', ['id' => $project->id]);
+        $this->assertDatabaseMissing('deals', ['id' => $dealId]);
+    }
 }
+

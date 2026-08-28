@@ -33,7 +33,9 @@ import {
   CheckCircle2,
   AlertCircle,
   Download,
-  FileDown
+  FileDown,
+  Clock,
+  ArrowUpRight
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -77,10 +79,11 @@ watch(() => page.props.flash, (newFlash) => {
   }
 }, { deep: true, immediate: true });
 
-// Addendum Modal State
+// Modals State
 const addendumModalOpen = ref(false);
 const targetProject = ref(null);
 const showExportModal = ref(false);
+const isQuickSimulatorOpen = ref(false);
 
 const addendumForm = useForm({
   addendum_type: 'module_expansion',
@@ -203,418 +206,311 @@ const saasGrandTotal = computed(() => {
   return setup + (recurring * duration);
 });
 
-// Analytics Calculations
-const generatedProjectsCount = computed(() => {
-  return props.recentProjects.filter(p => p.status === 'Generated').length;
-});
-
-const draftProjectsCount = computed(() => {
-  return props.recentProjects.filter(p => p.status === 'Draft').length;
-});
-
-const generatedPercentage = computed(() => {
-  const total = props.recentProjects.length || 1;
-  return Math.round((generatedProjectsCount.value / total) * 100);
-});
-
-const draftPercentage = computed(() => {
-  const total = props.recentProjects.length || 1;
-  return Math.round((draftProjectsCount.value / total) * 100);
-});
-
-const oneOffPercentage = computed(() => {
-  const total = props.stats.total_projects || 1;
-  return Math.round(((props.stats.one_off_count || 0) / total) * 100);
-});
-
-const subscriptionPercentage = computed(() => {
-  const total = props.stats.total_projects || 1;
-  return Math.round(((props.stats.subscription_count || 0) / total) * 100);
-});
-
 function formatRupiah(num) {
   return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', maximumFractionDigits: 0 }).format(num || 0);
 }
 
 function goToCreate() {
+  isQuickSimulatorOpen.value = false;
   router.get('/projects/create');
 }
 
 function goToHelp() {
+  isQuickSimulatorOpen.value = false;
   router.get('/help');
 }
 </script>
 
 <template>
-  <Head title="Dasbor Utama" />
+  <Head title="Dasbor Eksekutif CRM" />
 
-  <AppLayout title="Dasbor Utama & Simulator Kalkulator">
+  <AppLayout title="Dasbor Eksekutif CRM & CPQ System">
     <div class="space-y-8 max-w-7xl mx-auto">
       
-      <!-- Top Header (Simple Style matching sidebar) -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm shrink-0">
-              <LayoutDashboard class="w-5 h-5" />
-            </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Dasbor Utama
-            </h2>
+      <!-- TOP HEADER & EXECUTIVE ACTIONS -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Dasbor Eksekutif CRM</h1>
+            <span class="px-2 py-0.5 text-xs font-extrabold bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 rounded-lg border border-indigo-200 dark:border-indigo-800">IT Agency Hub</span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            Ringkasan metrik aktivitas penawaran harga, estimasi nilai kontrak, dan kalkulator cepat.
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Monitoring pipa penjualan deals, aktivitas klien B2B, dan ringkasan nilai kontrak penawaran harga software.
           </p>
         </div>
 
-        <Link
-          href="/projects/create"
-          class="px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
-        >
-          <Plus class="w-4 h-4" />
-          <span>Buat Penawaran Baru</span>
-        </Link>
+        <div class="flex items-center gap-2.5 flex-wrap self-start sm:self-auto shrink-0">
+          <button
+            @click="isQuickSimulatorOpen = true"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 font-extrabold text-xs border border-slate-200/80 dark:border-slate-800/80 shadow-xs transition cursor-pointer active:scale-95"
+          >
+            <Calculator class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+            <span>⚡ Simulasi Cepat</span>
+          </button>
+
+          <Link
+            href="/deals"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-purple-50 dark:bg-purple-950/80 hover:bg-purple-100 dark:hover:bg-purple-900/60 text-purple-700 dark:text-purple-300 font-extrabold text-xs border border-purple-200 dark:border-purple-800 transition cursor-pointer active:scale-95"
+          >
+            <Kanban class="w-4 h-4 stroke-[2.5]" />
+            <span>Sales Kanban</span>
+          </Link>
+
+          <Link
+            href="/projects/create"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer active:scale-95"
+          >
+            <Plus class="w-4 h-4 stroke-[3]" />
+            <span>Buat Penawaran</span>
+          </Link>
+        </div>
       </div>
 
-      <!-- Simple Notification Alert (Below Header) -->
-      <Transition
-        enter-active-class="transition duration-200 ease-out"
-        enter-from-class="opacity-0 -translate-y-1 scale-98"
-        enter-to-class="opacity-100 translate-y-0 scale-100"
-        leave-active-class="transition duration-150 ease-in"
-        leave-from-class="opacity-100 translate-y-0 scale-100"
-        leave-to-class="opacity-0 -translate-y-1 scale-98"
+      <!-- ONBOARDING GUIDE BANNER (Tampil jika workspace masih bersih/0 data) -->
+      <div 
+        v-if="crmStats.total_deals === 0 && stats.total_projects === 0 && crmStats.total_clients === 0" 
+        class="p-6 rounded-3xl bg-gradient-to-r from-indigo-900 via-indigo-800 to-purple-900 text-white shadow-xl relative overflow-hidden space-y-4"
       >
-        <div
-          v-if="flashSuccess"
-          class="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200 flex items-center justify-between gap-3 shadow-sm"
-        >
-          <div class="flex items-center gap-2.5">
-            <CheckCircle2 class="w-4.5 h-4.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            <span class="text-xs font-bold">{{ flashSuccess }}</span>
-          </div>
-          <button
-            @click="flashSuccess = ''"
-            class="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-900/60 rounded-lg transition cursor-pointer"
-          >
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div
-          v-else-if="flashError"
-          class="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/80 text-rose-900 dark:text-rose-200 flex items-center justify-between gap-3 shadow-sm"
-        >
-          <div class="flex items-center gap-2.5">
-            <AlertCircle class="w-4.5 h-4.5 text-rose-600 dark:text-rose-400 shrink-0" />
-            <span class="text-xs font-bold">{{ flashError }}</span>
-          </div>
-          <button
-            @click="flashError = ''"
-            class="p-1 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-900/60 rounded-lg transition cursor-pointer"
-          >
-            <X class="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </Transition>
-
-      <!-- Top Stat Overview Cards -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4 transition hover:border-indigo-300 dark:hover:border-indigo-800">
-          <div class="w-12 h-12 rounded-xl bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
-            <FileText class="w-6 h-6" />
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Penawaran</p>
-            <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">{{ stats.total_projects }}</h3>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4 transition hover:border-emerald-300 dark:hover:border-emerald-800">
-          <div class="w-12 h-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
-            <Banknote class="w-6 h-6" />
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Total Nilai Kontrak</p>
-            <h3 class="text-base font-extrabold text-slate-900 dark:text-white mt-0.5">{{ stats.total_value_formatted }}</h3>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4 transition hover:border-sky-300 dark:hover:border-sky-800">
-          <div class="w-12 h-12 rounded-xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
-            <Briefcase class="w-6 h-6" />
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Putus Kontrak (One-Off)</p>
-            <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">{{ stats.one_off_count }}</h3>
-          </div>
-        </div>
-
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex items-center gap-4 transition hover:border-amber-300 dark:hover:border-amber-800">
-          <div class="w-12 h-12 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <RefreshCw class="w-6 h-6" />
-          </div>
-          <div>
-            <p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Berlangganan SaaS</p>
-            <h3 class="text-xl font-extrabold text-slate-900 dark:text-white mt-0.5">{{ stats.subscription_count }}</h3>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stacked Widgets (Atas-Bawah): Quick Calculator & Scheme Line Chart -->
-      <div class="space-y-8">
-        
-        <!-- Widget 1: Quick Calculator Simulator Widget -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-6">
-          <!-- Header -->
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
-                <Calculator class="w-5 h-5" />
-              </div>
-              <div>
-                <h2 class="text-base font-bold text-slate-900 dark:text-white">Kalkulator Penawaran Cepat</h2>
-                <p class="text-xs text-slate-500 dark:text-slate-400">Simulasi instan biaya proyek pengembangan software & lisensi berulang.</p>
-              </div>
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-1.5 max-w-xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-white text-xs font-black backdrop-blur-xs border border-white/20">
+              <Sparkles class="w-3.5 h-3.5 text-amber-300" />
+              <span>Workspace CRM Siap Digunakan</span>
             </div>
-
-            <!-- Mode Switcher Tabs -->
-            <div class="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-xl w-full sm:w-auto gap-1">
-              <button
-                @click="mode = 'one_off'"
-                class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
-                :class="mode === 'one_off' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-              >
-                <Banknote class="w-4 h-4" />
-                <span>Beli Putus (One-Off)</span>
-              </button>
-
-              <button
-                @click="mode = 'subscription'"
-                class="flex-1 sm:flex-none px-4 py-2 text-xs font-bold rounded-lg transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
-                :class="mode === 'subscription' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
-              >
-                <RefreshCw class="w-4 h-4" />
-                <span>Langganan SaaS</span>
-              </button>
-            </div>
+            <h2 class="text-xl font-black tracking-tight">Selamat Datang di DevCalc Agency CRM & CPQ</h2>
+            <p class="text-xs text-indigo-200 leading-relaxed">
+              Mulai alur penjualan software agensi Anda: Daftarkan klien B2B, kalkulasikan harga proyek & modul fitur (CPQ), lalu pantau tahapan deal hingga closing di sales Kanban.
+            </p>
           </div>
 
-          <!-- Simulator Form Inputs -->
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 rounded-2xl">
-            <!-- Common Inputs -->
-            <CurrencyInput v-model="basePrice" label="Harga Dasar Modul" helperText="Estimasi harga katalog modul" />
-
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Bobot Kompleksitas</label>
-              <select
-                v-model.number="complexity"
-                class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              >
-                <option :value="0.8">0.8x (Sederhana)</option>
-                <option :value="1.0">1.0x (Standar)</option>
-                <option :value="1.25">1.25x (Sedang)</option>
-                <option :value="1.5">1.5x (Kompleks)</option>
-                <option :value="2.0">2.0x (Enterprise / High Risk)</option>
-              </select>
-            </div>
-
-            <CurrencyInput v-model="setupFee" label="Biaya Setup Awal" helperText="Biaya satu kali onboarding" />
-
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA)</label>
-              <select
-                v-model.number="maintenanceMonths"
-                class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-indigo-500"
-              >
-                <option :value="1">1 Bulan</option>
-                <option :value="3">3 Bulan (Standar SLA)</option>
-                <option :value="6">6 Bulan (Extended SLA)</option>
-                <option :value="12">12 Bulan (Full Year SLA)</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- SaaS Extra Inputs -->
-          <div v-if="mode === 'subscription'" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Metode Langganan</label>
-              <select v-model="subBasis" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg">
-                <option value="modular">Flat Modular</option>
-                <option value="per_user">Per-User</option>
-                <option value="hybrid">Hybrid (Modul + User)</option>
-              </select>
-            </div>
-
-            <div class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Siklus Penagihan</label>
-              <select v-model="subCycle" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg">
-                <option value="monthly">Bulanan</option>
-                <option value="yearly">Tahunan</option>
-              </select>
-            </div>
-
-            <div v-if="subBasis === 'per_user' || subBasis === 'hybrid'" class="space-y-1.5">
-              <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">Kapasitas User</label>
-              <input v-model.number="userCount" type="number" min="1" class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg" />
-            </div>
-
-            <CurrencyInput v-if="subBasis === 'per_user' || subBasis === 'hybrid'" v-model="pricePerUser" label="Tarif / User" />
-          </div>
-
-          <!-- Result Box -->
-          <div class="p-6 rounded-2xl border transition-all duration-300" :class="mode === 'one_off' ? 'bg-gradient-to-br from-indigo-50/80 to-slate-50 dark:from-indigo-950/40 dark:to-slate-900 border-indigo-200 dark:border-indigo-800/60' : 'bg-gradient-to-br from-emerald-50/80 to-slate-50 dark:from-emerald-950/40 dark:to-slate-900 border-emerald-200 dark:border-emerald-800/60'">
-            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div>
-                <span class="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                  <Sparkles class="w-3.5 h-3.5 text-indigo-500" />
-                  <span>{{ mode === 'one_off' ? 'TOTAL BELI PUTUS TERHITUNG' : 'TOTAL KONTRAK SAAS TERHITUNG' }}</span>
-                </span>
-                <h3 class="text-3xl font-black text-slate-900 dark:text-white mt-1">
-                  {{ formatRupiah(mode === 'one_off' ? oneOffTotal : saasGrandTotal) }}
-                </h3>
-                <p v-if="mode === 'subscription'" class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-1">
-                  Berulang: {{ formatRupiah(saasRecurring) }} {{ subCycle === 'yearly' ? '/ tahun' : '/ bulan' }}
-                </p>
-                <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Garansi: <span class="font-bold text-slate-700 dark:text-slate-300">{{ slaText }}</span>
-                </p>
-              </div>
-
-              <!-- Action Buttons -->
-              <div class="flex items-center gap-3">
-                <button
-                  @click="goToCreate"
-                  class="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
-                >
-                  <Plus class="w-4 h-4" />
-                  <span>Buat Penawaran</span>
-                </button>
-
-                <button
-                  @click="goToHelp"
-                  class="px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold text-xs rounded-xl border border-slate-300 dark:border-slate-700 transition flex items-center gap-2 cursor-pointer"
-                >
-                  <HelpCircle class="w-4 h-4" />
-                  <span>Panduan</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Widget 2: Financial Model Analytics Widget Section -->
-        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
-          <SchemeBarChart
-            :oneOffCount="stats.one_off_count"
-            :subscriptionCount="stats.subscription_count"
-            :stats="stats"
-            :recentProjects="recentProjects"
-          />
-        </div>
-
-        <!-- Widget 3: CRM Sales Pipeline & Activity Hub -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          
-          <!-- Recent Deals (2 Cols) -->
-          <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
-                  <Kanban class="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 class="text-sm font-black text-slate-900 dark:text-white">Pipeline Deals Terkini</h3>
-                  <p class="text-[11px] text-slate-400">Peluang proyek yang sedang berjalan di sales stage</p>
-                </div>
-              </div>
-              <Link href="/deals" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
-                <span>Buka Kanban</span>
-                <ArrowRight class="w-3.5 h-3.5" />
-              </Link>
-            </div>
-
-            <div v-if="recentDeals.length" class="divide-y divide-slate-100 dark:divide-slate-800">
-              <div
-                v-for="deal in recentDeals"
-                :key="deal.id"
-                class="py-3 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-xl px-2 transition"
-              >
-                <div class="space-y-0.5 truncate">
-                  <div class="text-xs font-black text-slate-900 dark:text-white truncate">{{ deal.title }}</div>
-                  <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-                    <Building2 class="w-3 h-3 text-slate-400" />
-                    <span>{{ deal.client_name }}</span>
-                    <span>•</span>
-                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">{{ deal.stage_label }} ({{ deal.probability }}%)</span>
-                  </div>
-                </div>
-
-                <div class="text-right shrink-0">
-                  <div class="text-xs font-black text-slate-900 dark:text-white">{{ deal.expected_value_formatted }}</div>
-                  <div class="text-[10px] text-slate-400">Sales: {{ deal.sales_name }}</div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="text-center py-6 text-xs text-slate-400 italic">
-              Belum ada deal aktif.
-            </div>
-          </div>
-
-          <!-- CRM Stats & Recent Activities (1 Col) -->
-          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
-            <div class="space-y-3">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                  <Building2 class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                  <span>Klien & Konversi CRM</span>
-                </h3>
-                <Link href="/clients" class="text-[11px] font-bold text-indigo-500 hover:underline">Semua Klien &rarr;</Link>
-              </div>
-
-              <!-- Mini stats -->
-              <div class="grid grid-cols-2 gap-2 text-center">
-                <div class="p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60">
-                  <div class="text-base font-black text-indigo-600 dark:text-indigo-400">{{ crmStats.total_clients }}</div>
-                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Klien B2B</div>
-                </div>
-                <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60">
-                  <div class="text-base font-black text-emerald-600 dark:text-emerald-400">{{ crmStats.win_rate }}%</div>
-                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Win Rate</div>
-                </div>
-              </div>
-
-              <!-- Activities -->
-              <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktivitas Terkini</div>
-                <div v-if="recentActivities.length" class="space-y-2">
-                  <div v-for="act in recentActivities.slice(0, 3)" :key="act.id" class="text-xs space-y-0.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-                    <div class="font-bold text-slate-800 dark:text-slate-200 truncate">{{ act.title }}</div>
-                    <div class="text-[10px] text-slate-400 flex items-center justify-between">
-                      <span>{{ act.client_name }}</span>
-                      <span>{{ act.performed_at_formatted }}</span>
-                    </div>
-                  </div>
-                </div>
-                <div v-else class="text-[11px] text-slate-400 italic text-center py-2">
-                  Belum ada catatan aktivitas.
-                </div>
-              </div>
-            </div>
-
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto shrink-0">
             <Link
               href="/clients"
-              class="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold text-center transition block"
+              class="p-4 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-xs border border-white/15 transition flex flex-col justify-between space-y-2 group"
             >
-              Buka Direktori Klien 360° &rarr;
+              <div class="flex items-center justify-between">
+                <span class="w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center">1</span>
+                <Building2 class="w-4 h-4 text-indigo-300 group-hover:scale-110 transition" />
+              </div>
+              <div>
+                <div class="text-xs font-black text-white">Tambah Klien B2B</div>
+                <div class="text-[10px] text-indigo-200">Daftarkan perusahaan & PIC</div>
+              </div>
+            </Link>
+
+            <Link
+              href="/projects/create"
+              class="p-4 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-xs border border-white/15 transition flex flex-col justify-between space-y-2 group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center">2</span>
+                <FileText class="w-4 h-4 text-emerald-300 group-hover:scale-110 transition" />
+              </div>
+              <div>
+                <div class="text-xs font-black text-white">Buat Proposal CPQ</div>
+                <div class="text-[10px] text-indigo-200">Kalkulasi harga & modul</div>
+              </div>
+            </Link>
+
+            <Link
+              href="/deals"
+              class="p-4 rounded-2xl bg-white/10 hover:bg-white/20 backdrop-blur-xs border border-white/15 transition flex flex-col justify-between space-y-2 group"
+            >
+              <div class="flex items-center justify-between">
+                <span class="w-6 h-6 rounded-lg bg-white/20 text-white font-black text-xs flex items-center justify-center">3</span>
+                <Kanban class="w-4 h-4 text-purple-300 group-hover:scale-110 transition" />
+              </div>
+              <div>
+                <div class="text-xs font-black text-white">Tracking Deal Kanban</div>
+                <div class="text-[10px] text-indigo-200">Monitor closing & negosiasi</div>
+              </div>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 TOP EXECUTIVE METRICS CARDS -->
+      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Card 1: Pipeline Value -->
+        <div class="p-4.5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3.5 transition hover:border-indigo-300 dark:hover:border-indigo-800">
+          <div class="w-11 h-11 rounded-2xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <TrendingUp class="w-5 h-5" />
+          </div>
+          <div class="truncate">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Total Pipeline Aktif</div>
+            <div class="text-lg font-black text-slate-900 dark:text-white truncate">{{ crmStats.pipeline_value_formatted }}</div>
+            <div class="text-[10px] text-slate-400 font-semibold">{{ crmStats.active_deals_count }} Peluang Berjalan</div>
+          </div>
+        </div>
+
+        <!-- Card 2: Revenue Won -->
+        <div class="p-4.5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3.5 transition hover:border-emerald-300 dark:hover:border-emerald-800">
+          <div class="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <CheckCircle2 class="w-5 h-5" />
+          </div>
+          <div class="truncate">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Deals Won (Closing)</div>
+            <div class="text-lg font-black text-emerald-600 dark:text-emerald-400 truncate">{{ crmStats.won_value_formatted }}</div>
+            <div class="text-[10px] text-slate-400 font-semibold">{{ crmStats.won_count }} Deal Disetujui</div>
+          </div>
+        </div>
+
+        <!-- Card 3: B2B Clients -->
+        <div class="p-4.5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3.5 transition hover:border-sky-300 dark:hover:border-sky-800">
+          <div class="w-11 h-11 rounded-2xl bg-sky-50 dark:bg-sky-950 text-sky-600 dark:text-sky-400 flex items-center justify-center shrink-0">
+            <Building2 class="w-5 h-5" />
+          </div>
+          <div class="truncate">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Klien B2B Dikelola</div>
+            <div class="text-lg font-black text-slate-900 dark:text-white truncate">{{ crmStats.total_clients }} Perusahaan</div>
+            <div class="text-[10px] text-slate-400 font-semibold">{{ crmStats.active_clients }} Klien Aktif</div>
+          </div>
+        </div>
+
+        <!-- Card 4: Quotations & Win Rate -->
+        <div class="p-4.5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800/80 shadow-xs flex items-center gap-3.5 transition hover:border-purple-300 dark:hover:border-purple-800">
+          <div class="w-11 h-11 rounded-2xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
+            <FileText class="w-5 h-5" />
+          </div>
+          <div class="truncate">
+            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Penawaran & Win Rate</div>
+            <div class="text-lg font-black text-purple-600 dark:text-purple-400 truncate">{{ stats.total_projects }} Dokumen</div>
+            <div class="text-[10px] text-slate-400 font-semibold">Win Rate: {{ crmStats.win_rate }}%</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- PRIMARY CRM SECTION: SALES PIPELINE & ACTIVITY HUB (Posisi Utama di Atas) -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left: Recent Deals in Pipeline (2 Cols) -->
+        <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                <Kanban class="w-4 h-4" />
+              </div>
+              <div>
+                <h3 class="text-sm font-black text-slate-900 dark:text-white">Pipeline Deals Terkini</h3>
+                <p class="text-[11px] text-slate-400">Peluang proyek yang sedang berjalan di sales stage</p>
+              </div>
+            </div>
+            <Link href="/deals" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <span>Buka Kanban</span>
+              <ArrowRight class="w-3.5 h-3.5" />
             </Link>
           </div>
 
+          <div v-if="recentDeals.length" class="divide-y divide-slate-100 dark:divide-slate-800">
+            <div
+              v-for="deal in recentDeals"
+              :key="deal.id"
+              class="py-3 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-xl px-2 transition group"
+            >
+              <div class="space-y-0.5 truncate">
+                <div class="text-xs font-black text-slate-900 dark:text-white truncate group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition">
+                  {{ deal.title }}
+                </div>
+                <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap">
+                  <span class="font-bold text-slate-700 dark:text-slate-300">{{ deal.client_name }}</span>
+                  <span>•</span>
+                  <span class="text-indigo-600 dark:text-indigo-400 font-bold">{{ deal.stage_label }} ({{ deal.probability }}%)</span>
+                  <span>•</span>
+                  <span>Target: {{ deal.expected_close_date_formatted }}</span>
+                </div>
+              </div>
+
+              <div class="text-right shrink-0">
+                <div class="text-xs font-black text-slate-900 dark:text-white">{{ deal.expected_value_formatted }}</div>
+                <Link 
+                  v-if="deal.client_id"
+                  :href="`/deals?client_id=${deal.client_id}`" 
+                  class="text-[10px] font-bold text-indigo-500 hover:underline"
+                >
+                  Lihat di Kanban &rarr;
+                </Link>
+                <div v-else class="text-[10px] text-slate-400">Sales: {{ deal.sales_name }}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div v-else class="text-center py-8 px-4 rounded-2xl bg-slate-50/50 dark:bg-slate-800/20 border border-dashed border-slate-200 dark:border-slate-800 space-y-2">
+            <Kanban class="w-8 h-8 mx-auto text-slate-300 dark:text-slate-600" />
+            <div class="text-xs font-bold text-slate-600 dark:text-slate-300">Belum ada deal aktif di pipeline</div>
+            <p class="text-[11px] text-slate-400 max-w-sm mx-auto">Catat peluang proyek dari klien Anda untuk memantau tahapan negosiasi.</p>
+            <Link
+              href="/deals"
+              class="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-extrabold hover:bg-indigo-100 transition mt-1"
+            >
+              + Tambah Deal Pertama
+            </Link>
+          </div>
+        </div>
+
+        <!-- Right: CRM Stats & Recent Activities (1 Col) -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <Building2 class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Aktivitas & Log CRM</span>
+              </h3>
+              <Link href="/clients" class="text-[11px] font-bold text-indigo-500 hover:underline">Semua Klien &rarr;</Link>
+            </div>
+
+            <!-- Mini stats summary -->
+            <div class="grid grid-cols-2 gap-2 text-center">
+              <div class="p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60">
+                <div class="text-base font-black text-indigo-600 dark:text-indigo-400">{{ crmStats.total_clients }}</div>
+                <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Klien Terdaftar</div>
+              </div>
+              <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60">
+                <div class="text-base font-black text-emerald-600 dark:text-emerald-400">{{ crmStats.win_rate }}%</div>
+                <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Closing Rate</div>
+              </div>
+            </div>
+
+            <!-- Activities Timeline -->
+            <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktivitas Terkini</div>
+              <div v-if="recentActivities.length" class="space-y-2">
+                <div v-for="act in recentActivities.slice(0, 4)" :key="act.id" class="text-xs space-y-0.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40">
+                  <div class="font-bold text-slate-800 dark:text-slate-200 truncate">{{ act.title }}</div>
+                  <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                    <span>{{ act.client_name }}</span>
+                    <span>{{ act.performed_at_formatted }}</span>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-[11px] text-slate-400 italic text-center py-4">
+                Belum ada catatan aktivitas follow-up.
+              </div>
+            </div>
+          </div>
+
+          <Link
+            href="/clients"
+            class="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold text-center transition block"
+          >
+            Buka Direktori Klien 360° &rarr;
+          </Link>
         </div>
 
       </div>
 
-      <!-- Recent Projects Table Section -->
+      <!-- ANALISIS MODEL BISNIS & DISTRIBUSI VALUASI SECTION -->
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm">
+        <SchemeBarChart
+          :oneOffCount="stats.one_off_count"
+          :subscriptionCount="stats.subscription_count"
+          :stats="stats"
+          :recentProjects="recentProjects"
+        />
+      </div>
+
+      <!-- RECENT PROJECTS / QUOTATIONS TABLE SECTION -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div class="flex items-center gap-2.5">
@@ -623,7 +519,7 @@ function goToHelp() {
             </div>
             <div>
               <h3 class="text-sm font-black text-slate-900 dark:text-white">Penawaran Terbaru & Aksi Cepat</h3>
-              <p class="text-[11px] text-slate-400">Dokumen estimasi dan proposal penawaran harga terbaru</p>
+              <p class="text-[11px] text-slate-400">Dokumen estimasi dan proposal penawaran harga software terbaru</p>
             </div>
           </div>
           <div class="flex items-center gap-3">
@@ -692,7 +588,7 @@ function goToHelp() {
 
               <tr v-if="!recentProjects.length">
                 <td colspan="7" class="py-8 text-center text-slate-400">
-                  Belum ada penawaran. Klik "Buat Penawaran" untuk memulai.
+                  Belum ada dokumen penawaran harga. Klik "Buat Penawaran" untuk memulai proposal baru.
                 </td>
               </tr>
             </tbody>
@@ -701,6 +597,143 @@ function goToHelp() {
       </div>
 
     </div>
+
+    <!-- QUICK CALCULATOR SIMULATOR MODAL (Opsi B: On-Demand Interactive Modal) -->
+    <Modal :show="isQuickSimulatorOpen" @close="isQuickSimulatorOpen = false" maxWidth="2xl">
+      <div class="p-6 space-y-6">
+        
+        <!-- Header Modal -->
+        <div class="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/30">
+              <Calculator class="w-5 h-5" />
+            </div>
+            <div>
+              <h3 class="text-base font-black text-slate-900 dark:text-white">Kalkulator Simulasi Penawaran Cepat</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400">Eksplorasi estimasi biaya Beli Putus & Langganan SaaS secara instan</p>
+            </div>
+          </div>
+          <button @click="isQuickSimulatorOpen = false" class="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <!-- Mode Switcher Tabs -->
+        <div class="flex p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl gap-1">
+          <button
+            @click="mode = 'one_off'"
+            class="flex-1 py-2 text-xs font-extrabold rounded-xl transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
+            :class="mode === 'one_off' ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          >
+            <Banknote class="w-4 h-4" />
+            <span>Beli Putus (One-Off Project)</span>
+          </button>
+
+          <button
+            @click="mode = 'subscription'"
+            class="flex-1 py-2 text-xs font-extrabold rounded-xl transition duration-150 flex items-center justify-center gap-2 cursor-pointer"
+            :class="mode === 'subscription' ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'"
+          >
+            <RefreshCw class="w-4 h-4" />
+            <span>Berlangganan (SaaS Recurring)</span>
+          </button>
+        </div>
+
+        <!-- Simulator Form Inputs -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <CurrencyInput v-model="basePrice" label="Estimasi Harga Dasar Modul" helperText="Total nilai modul dasar" />
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Faktor Kompleksitas</label>
+            <select
+              v-model.number="complexity"
+              class="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500"
+            >
+              <option :value="0.8">0.8x (Sederhana)</option>
+              <option :value="1.0">1.0x (Standar)</option>
+              <option :value="1.25">1.25x (Sedang)</option>
+              <option :value="1.5">1.5x (Kompleks)</option>
+              <option :value="2.0">2.0x (Enterprise / High Risk)</option>
+            </select>
+          </div>
+
+          <CurrencyInput v-model="setupFee" label="Biaya Setup Awal (Onboarding)" helperText="Biaya satu kali deploy" />
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Garansi Maintenance (SLA)</label>
+            <select
+              v-model.number="maintenanceMonths"
+              class="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl focus:ring-2 focus:ring-indigo-500"
+            >
+              <option :value="1">1 Bulan SLA</option>
+              <option :value="3">3 Bulan (Standar SLA)</option>
+              <option :value="6">6 Bulan (Extended SLA)</option>
+              <option :value="12">12 Bulan (Full Year SLA)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- SaaS Extra Inputs -->
+        <div v-if="mode === 'subscription'" class="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800">
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Metode Tagihan</label>
+            <select v-model="subBasis" class="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <option value="modular">Flat Modular</option>
+              <option value="per_user">Per-User</option>
+              <option value="hybrid">Hybrid (Modul + User)</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Siklus Penagihan</label>
+            <select v-model="subCycle" class="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl">
+              <option value="monthly">Bulanan</option>
+              <option value="yearly">Tahunan</option>
+            </select>
+          </div>
+
+          <div class="space-y-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">Durasi Kontrak (Bulan)</label>
+            <input v-model.number="subDuration" type="number" min="1" class="w-full px-3 py-2 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl" />
+          </div>
+        </div>
+
+        <!-- Result Box -->
+        <div 
+          class="p-5 rounded-2xl border transition-all duration-300" 
+          :class="mode === 'one_off' ? 'bg-gradient-to-br from-indigo-50/80 to-slate-50 dark:from-indigo-950/40 dark:to-slate-900 border-indigo-200 dark:border-indigo-800/60' : 'bg-gradient-to-br from-emerald-50/80 to-slate-50 dark:from-emerald-950/40 dark:to-slate-900 border-emerald-200 dark:border-emerald-800/60'"
+        >
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <span class="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                <Sparkles class="w-3.5 h-3.5 text-indigo-500" />
+                <span>{{ mode === 'one_off' ? 'TOTAL ESTIMASI BELI PUTUS' : 'TOTAL ESTIMASI KONTRAK SAAS' }}</span>
+              </span>
+              <h4 class="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mt-1">
+                {{ formatRupiah(mode === 'one_off' ? oneOffTotal : saasGrandTotal) }}
+              </h4>
+              <p v-if="mode === 'subscription'" class="text-xs font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                Tagihan: {{ formatRupiah(saasRecurring) }} {{ subCycle === 'yearly' ? '/ tahun' : '/ bulan' }}
+              </p>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Garansi SLA: <span class="font-bold text-slate-700 dark:text-slate-300">{{ slaText }}</span>
+              </p>
+            </div>
+
+            <div class="flex items-center gap-2.5">
+              <button
+                @click="goToCreate"
+                class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-indigo-600/30 transition flex items-center gap-2 cursor-pointer"
+              >
+                <Plus class="w-4 h-4 stroke-[3]" />
+                <span>Transfer ke Proposal</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </Modal>
 
     <!-- Create Addendum Modal -->
     <Modal :show="addendumModalOpen" @close="addendumModalOpen = false" maxWidth="lg">

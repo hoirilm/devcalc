@@ -12,38 +12,32 @@ class Deal extends Model
     use HasFactory;
 
     public const STAGES = [
-        'discovery' => [
-            'label' => 'Discovery',
-            'probability' => 15,
+        'scoping' => [
+            'label' => 'Scoping & Draf',
+            'probability' => 30,
             'color' => 'indigo',
             'bg' => 'bg-indigo-500',
         ],
-        'scoping' => [
-            'label' => 'Requirement Scoping',
-            'probability' => 35,
+        'proposal_sent' => [
+            'label' => 'Proposal Terkirim',
+            'probability' => 60,
             'color' => 'blue',
             'bg' => 'bg-blue-500',
         ],
-        'proposal_sent' => [
-            'label' => 'Proposal Sent',
-            'probability' => 60,
-            'color' => 'amber',
-            'bg' => 'bg-amber-500',
-        ],
         'negotiation' => [
-            'label' => 'Negotiation',
+            'label' => 'Negosiasi & Review',
             'probability' => 80,
             'color' => 'purple',
             'bg' => 'bg-purple-500',
         ],
         'won' => [
-            'label' => 'Deal Won',
+            'label' => 'Closed Won',
             'probability' => 100,
             'color' => 'emerald',
             'bg' => 'bg-emerald-500',
         ],
         'lost' => [
-            'label' => 'Deal Lost',
+            'label' => 'Closed Lost',
             'probability' => 0,
             'color' => 'rose',
             'bg' => 'bg-rose-500',

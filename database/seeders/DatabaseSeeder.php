@@ -214,8 +214,5 @@ class DatabaseSeeder extends Seeder
                 $module
             );
         }
-
-        // 4. Seed Realistic Projects & Addendums
-        $this->call(RealisticProjectSeeder::class);
     }
 }
