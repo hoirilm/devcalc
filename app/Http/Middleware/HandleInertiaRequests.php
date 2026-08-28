@@ -63,6 +63,19 @@ class HandleInertiaRequests extends Middleware
                     'grand_total_formatted' => 'Rp ' . number_format($p->grand_total, 0, ',', '.'),
                     'type' => 'project',
                 ]),
+                'clients' => \App\Models\Client::select('id', 'name', 'industry', 'email', 'phone')->take(15)->get()->map(fn ($c) => [
+                    'id' => $c->id,
+                    'name' => $c->name,
+                    'industry' => $c->industry,
+                    'type' => 'client',
+                ]),
+                'deals' => \App\Models\Deal::with('client')->latest()->take(15)->get()->map(fn ($d) => [
+                    'id' => $d->id,
+                    'title' => $d->title,
+                    'client_name' => $d->client?->name ?? 'Unknown',
+                    'expected_value_formatted' => 'Rp ' . number_format($d->expected_value, 0, ',', '.'),
+                    'type' => 'deal',
+                ]),
                 'modules' => \App\Models\Module::select('id', 'name', 'base_price', 'category')->take(15)->get()->map(fn ($m) => [
                     'id' => $m->id,
                     'name' => $m->name,

@@ -26,6 +26,14 @@ import {
 const props = defineProps({
   project: Object,
   modules: Array,
+  clients: {
+    type: Array,
+    default: () => []
+  },
+  deals: {
+    type: Array,
+    default: () => []
+  },
 });
 
 // Stepper State (1: Client Info, 2: Software Features, 3: Server & Hosting, 4: Billing Scheme & Finalize)
@@ -33,6 +41,8 @@ const currentStep = ref(1);
 const stepValidationError = ref('');
 
 const form = useForm({
+  client_id: props.project.client_id || '',
+  deal_id: props.project.deal_id || '',
   client_name: props.project.client_name,
   project_category: props.project.project_category || 'Web Application / SaaS Platform',
   estimated_timeline: props.project.estimated_timeline || '3 - 4 Minggu (Standar Pengerjaan)',
@@ -58,6 +68,17 @@ const form = useForm({
     is_hosting: false,
   }))
 });
+
+function onClientSelectChange(e) {
+  const selectedId = e.target.value;
+  form.client_id = selectedId;
+  if (selectedId) {
+    const cl = props.clients.find(c => c.id == selectedId);
+    if (cl) {
+      form.client_name = cl.name;
+    }
+  }
+}
 
 // Category & Timeline Preset Configurations
 const categoryPresets = [
@@ -612,6 +633,50 @@ function submit(targetStatus) {
             </div>
 
             <div class="space-y-5">
+              <!-- CRM Integration: Select Client & Deal -->
+              <div v-if="clients.length" class="p-4 rounded-2xl bg-indigo-50/50 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60 space-y-3">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-extrabold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1.5">
+                    <Sparkles class="w-3.5 h-3.5" />
+                    <span>Integrasi Database CRM</span>
+                  </span>
+                  <span class="text-[10px] text-slate-400">Hubungkan ke klien CRM atau deal pipeline</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Pilih dari Klien CRM Terdaftar
+                    </label>
+                    <select
+                      :value="form.client_id"
+                      @change="onClientSelectChange"
+                      class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                    >
+                      <option value="">-- Ketik Nama Klien Manual --</option>
+                      <option v-for="c in clients" :key="c.id" :value="c.id">
+                        {{ c.name }} ({{ c.industry || 'Klien' }})
+                      </option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">
+                      Hubungkan ke Peluang Deal (Opsional)
+                    </label>
+                    <select
+                      v-model="form.deal_id"
+                      class="w-full px-3 py-2 text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white"
+                    >
+                      <option value="">-- Tidak Terhubung ke Deal --</option>
+                      <option v-for="d in deals" :key="d.id" :value="d.id">
+                        {{ d.title }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
               <!-- Client Name -->
               <div class="space-y-1.5">
                 <label class="block text-xs font-semibold text-slate-700 dark:text-slate-300">

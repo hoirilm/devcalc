@@ -10,6 +10,13 @@ import ExportReportModal from '@/Components/ExportReportModal.vue';
 import SchemeBarChart from '@/Components/SchemeBarChart.vue';
 import ActionMenu from '@/Components/ActionMenu.vue';
 import { 
+  Building2,
+  Kanban,
+  Target,
+  Percent,
+  MessageSquare,
+  Phone,
+  ArrowRight,
   Calculator, 
   Banknote, 
   RefreshCw, 
@@ -30,9 +37,30 @@ import {
 } from 'lucide-vue-next';
 
 const props = defineProps({
-  recentProjects: Array,
-  stats: Object,
-  modules: Array,
+  recentProjects: {
+    type: Array,
+    default: () => []
+  },
+  stats: {
+    type: Object,
+    default: () => ({})
+  },
+  crmStats: {
+    type: Object,
+    default: () => ({ total_clients: 0, active_clients: 0, total_deals: 0, active_deals_count: 0, pipeline_value_formatted: 'Rp 0', won_value_formatted: 'Rp 0', win_rate: 0 })
+  },
+  recentDeals: {
+    type: Array,
+    default: () => []
+  },
+  recentActivities: {
+    type: Array,
+    default: () => []
+  },
+  modules: {
+    type: Array,
+    default: () => []
+  },
 });
 
 // Flash Messages State
@@ -485,12 +513,119 @@ function goToHelp() {
           />
         </div>
 
+        <!-- Widget 3: CRM Sales Pipeline & Activity Hub -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          <!-- Recent Deals (2 Cols) -->
+          <div class="lg:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-purple-50 dark:bg-purple-950 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
+                  <Kanban class="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 class="text-sm font-black text-slate-900 dark:text-white">Pipeline Deals Terkini</h3>
+                  <p class="text-[11px] text-slate-400">Peluang proyek yang sedang berjalan di sales stage</p>
+                </div>
+              </div>
+              <Link href="/deals" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+                <span>Buka Kanban</span>
+                <ArrowRight class="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div v-if="recentDeals.length" class="divide-y divide-slate-100 dark:divide-slate-800">
+              <div
+                v-for="deal in recentDeals"
+                :key="deal.id"
+                class="py-3 flex items-center justify-between gap-4 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 rounded-xl px-2 transition"
+              >
+                <div class="space-y-0.5 truncate">
+                  <div class="text-xs font-black text-slate-900 dark:text-white truncate">{{ deal.title }}</div>
+                  <div class="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                    <Building2 class="w-3 h-3 text-slate-400" />
+                    <span>{{ deal.client_name }}</span>
+                    <span>•</span>
+                    <span class="text-indigo-600 dark:text-indigo-400 font-bold">{{ deal.stage_label }} ({{ deal.probability }}%)</span>
+                  </div>
+                </div>
+
+                <div class="text-right shrink-0">
+                  <div class="text-xs font-black text-slate-900 dark:text-white">{{ deal.expected_value_formatted }}</div>
+                  <div class="text-[10px] text-slate-400">Sales: {{ deal.sales_name }}</div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="text-center py-6 text-xs text-slate-400 italic">
+              Belum ada deal aktif.
+            </div>
+          </div>
+
+          <!-- CRM Stats & Recent Activities (1 Col) -->
+          <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4 flex flex-col justify-between">
+            <div class="space-y-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Building2 class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  <span>Klien & Konversi CRM</span>
+                </h3>
+                <Link href="/clients" class="text-[11px] font-bold text-indigo-500 hover:underline">Semua Klien &rarr;</Link>
+              </div>
+
+              <!-- Mini stats -->
+              <div class="grid grid-cols-2 gap-2 text-center">
+                <div class="p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-100 dark:border-indigo-800/60">
+                  <div class="text-base font-black text-indigo-600 dark:text-indigo-400">{{ crmStats.total_clients }}</div>
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Klien B2B</div>
+                </div>
+                <div class="p-3 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-800/60">
+                  <div class="text-base font-black text-emerald-600 dark:text-emerald-400">{{ crmStats.win_rate }}%</div>
+                  <div class="text-[10px] font-bold text-slate-500 dark:text-slate-400">Win Rate</div>
+                </div>
+              </div>
+
+              <!-- Activities -->
+              <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktivitas Terkini</div>
+                <div v-if="recentActivities.length" class="space-y-2">
+                  <div v-for="act in recentActivities.slice(0, 3)" :key="act.id" class="text-xs space-y-0.5 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/40">
+                    <div class="font-bold text-slate-800 dark:text-slate-200 truncate">{{ act.title }}</div>
+                    <div class="text-[10px] text-slate-400 flex items-center justify-between">
+                      <span>{{ act.client_name }}</span>
+                      <span>{{ act.performed_at_formatted }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="text-[11px] text-slate-400 italic text-center py-2">
+                  Belum ada catatan aktivitas.
+                </div>
+              </div>
+            </div>
+
+            <Link
+              href="/clients"
+              class="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold text-center transition block"
+            >
+              Buka Direktori Klien 360° &rarr;
+            </Link>
+          </div>
+
+        </div>
+
       </div>
 
       <!-- Recent Projects Table Section -->
       <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-sm space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-sm font-bold text-slate-900 dark:text-white">Penawaran Terbaru & Aksi Cepat</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div class="flex items-center gap-2.5">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
+              <FileText class="w-4 h-4" />
+            </div>
+            <div>
+              <h3 class="text-sm font-black text-slate-900 dark:text-white">Penawaran Terbaru & Aksi Cepat</h3>
+              <p class="text-[11px] text-slate-400">Dokumen estimasi dan proposal penawaran harga terbaru</p>
+            </div>
+          </div>
           <div class="flex items-center gap-3">
             <button
               @click="showExportModal = true"
@@ -499,8 +634,9 @@ function goToHelp() {
               <FileDown class="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
               <span>Ekspor Laporan</span>
             </button>
-            <Link href="/projects" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline">
-              Lihat Semua &rarr;
+            <Link href="/projects" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1">
+              <span>Lihat Semua</span>
+              <ArrowRight class="w-3.5 h-3.5" />
             </Link>
           </div>
         </div>

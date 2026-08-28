@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Client;
+use App\Models\Deal;
+use App\Models\DealActivity;
 use App\Models\Module;
 use App\Models\Project;
 use Illuminate\Http\Request;
@@ -12,7 +15,7 @@ class ProjectController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Project::with(['user', 'parent', 'items']);
+        $query = Project::with(['user', 'parent', 'items', 'client', 'deal']);
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
@@ -41,7 +44,10 @@ class ProjectController extends Controller
             return [
                 'id' => $project->id,
                 'code' => $project->getQuotationCode(),
+                'client_id' => $project->client_id,
+                'deal_id' => $project->deal_id,
                 'client_name' => $project->client_name,
+                'deal_title' => $project->deal?->title,
                 'project_category' => $project->project_category,
                 'estimated_timeline' => $project->estimated_timeline,
                 'estimator_name' => $project->user->name ?? 'System',
@@ -75,18 +81,29 @@ class ProjectController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
         $modules = Module::query()->select('id', 'name', 'base_price', 'subscription_price', 'category', 'description')->get();
+        $clients = Client::query()->select('id', 'name', 'industry', 'email', 'phone')->orderBy('name')->get();
+        $deals = Deal::query()->select('id', 'client_id', 'title', 'stage', 'expected_value')->orderBy('title')->get();
+
+        $selectedClientId = $request->query('client_id');
+        $selectedDealId = $request->query('deal_id');
 
         return Inertia::render('Projects/Create', [
             'modules' => $modules,
+            'clients' => $clients,
+            'deals' => $deals,
+            'initialClientId' => $selectedClientId ? (int) $selectedClientId : null,
+            'initialDealId' => $selectedDealId ? (int) $selectedDealId : null,
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'client_id' => 'nullable|exists:clients,id',
+            'deal_id' => 'nullable|exists:deals,id',
             'client_name' => 'required|string|max:255',
             'project_category' => 'nullable|string|max:255',
             'estimated_timeline' => 'nullable|string|max:255',
@@ -109,8 +126,24 @@ class ProjectController extends Controller
             'items.*.complexity_weight' => 'required|numeric|min:0.1',
         ]);
 
+        // Auto-fill / create client jika belum ada client_id
+        $clientId = $validated['client_id'] ?? null;
+        if (!$clientId && !empty($validated['client_name'])) {
+            $client = Client::firstOrCreate(
+                ['name' => $validated['client_name']],
+                [
+                    'user_id' => auth()->id() ?? 1,
+                    'industry' => $validated['project_category'] ?? null,
+                    'status' => $validated['status'] === 'Draft' ? 'prospect' : 'active',
+                ]
+            );
+            $clientId = $client->id;
+        }
+
         $project = new Project();
         $project->user_id = auth()->id() ?? 1;
+        $project->client_id = $clientId;
+        $project->deal_id = $validated['deal_id'] ?? null;
         $project->client_name = $validated['client_name'];
         $project->project_category = $validated['project_category'] ?? null;
         $project->estimated_timeline = $validated['estimated_timeline'] ?? null;
@@ -146,18 +179,42 @@ class ProjectController extends Controller
 
         $project->recalculateGrandTotal();
 
+        // Update Deal value & add activity if deal is linked
+        if ($project->deal_id && $deal = Deal::find($project->deal_id)) {
+            $deal->expected_value = $project->grand_total;
+            if ($project->status === 'Generated' && in_array($deal->stage, ['discovery', 'scoping'])) {
+                $deal->stage = 'proposal_sent';
+                $deal->probability = 60;
+            }
+            $deal->save();
+
+            DealActivity::create([
+                'deal_id' => $deal->id,
+                'client_id' => $deal->client_id,
+                'user_id' => auth()->id() ?? 1,
+                'type' => 'note',
+                'title' => "Penawaran #{$project->getQuotationCode()} Dibuat",
+                'description' => "Penawaran resmi senilai Rp " . number_format($project->grand_total, 0, ',', '.') . " berhasil dihitung dan dikaitkan ke deal.",
+                'performed_at' => now(),
+            ]);
+        }
+
         return redirect()->route('projects.index')->with('success', "Penawaran #{$project->getQuotationCode()} berhasil dibuat!");
     }
 
     public function edit(Project $project): Response
     {
-        $project->load(['items']);
+        $project->load(['items', 'client', 'deal']);
         $modules = Module::query()->select('id', 'name', 'base_price', 'subscription_price', 'category', 'description')->get();
+        $clients = Client::query()->select('id', 'name', 'industry', 'email', 'phone')->orderBy('name')->get();
+        $deals = Deal::query()->select('id', 'client_id', 'title', 'stage', 'expected_value')->orderBy('title')->get();
 
         return Inertia::render('Projects/Edit', [
             'project' => [
                 'id' => $project->id,
                 'code' => $project->getQuotationCode(),
+                'client_id' => $project->client_id,
+                'deal_id' => $project->deal_id,
                 'client_name' => $project->client_name,
                 'project_category' => $project->project_category,
                 'estimated_timeline' => $project->estimated_timeline,
@@ -183,12 +240,16 @@ class ProjectController extends Controller
                 ]),
             ],
             'modules' => $modules,
+            'clients' => $clients,
+            'deals' => $deals,
         ]);
     }
 
     public function update(Request $request, Project $project)
     {
         $validated = $request->validate([
+            'client_id' => 'nullable|exists:clients,id',
+            'deal_id' => 'nullable|exists:deals,id',
             'client_name' => 'required|string|max:255',
             'project_category' => 'nullable|string|max:255',
             'estimated_timeline' => 'nullable|string|max:255',
@@ -211,6 +272,8 @@ class ProjectController extends Controller
             'items.*.complexity_weight' => 'required|numeric|min:0.1',
         ]);
 
+        $project->client_id = $validated['client_id'] ?? $project->client_id;
+        $project->deal_id = $validated['deal_id'] ?? $project->deal_id;
         $project->client_name = $validated['client_name'];
         $project->project_category = $validated['project_category'] ?? null;
         $project->estimated_timeline = $validated['estimated_timeline'] ?? null;
@@ -244,6 +307,12 @@ class ProjectController extends Controller
         }
 
         $project->recalculateGrandTotal();
+
+        // Update Deal value if linked
+        if ($project->deal_id && $deal = Deal::find($project->deal_id)) {
+            $deal->expected_value = $project->grand_total;
+            $deal->save();
+        }
 
         return redirect()->route('projects.index')->with('success', "Penawaran #{$project->getQuotationCode()} berhasil diperbarui!");
     }

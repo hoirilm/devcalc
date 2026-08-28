@@ -156,27 +156,23 @@ function confirmDeleteModule() {
   <AppLayout title="Katalog Modul Fitur Master Data">
     <div class="space-y-6 max-w-7xl mx-auto">
       
-      <!-- Top Header (Simple Style matching sidebar) -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm shrink-0">
-              <Layers class="w-5 h-5" />
-            </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Katalog Modul Master
-            </h2>
+      <!-- HEADER & ACTIONS -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Katalog Modul Master</h1>
+            <span class="px-2 py-0.5 text-xs font-extrabold bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-lg border border-blue-200 dark:border-blue-800">Master Data</span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            Kelola katalog modul standar software dan tarif lisensi acuan.
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Kelola basis modul fitur software, harga acuan beli putus, dan tarif langganan lisensi SaaS.
           </p>
         </div>
 
         <button
           @click="openCreateModal"
-          class="px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto"
         >
-          <Plus class="w-4 h-4" />
+          <Plus class="w-4 h-4 stroke-[3]" />
           <span>Tambah Modul Baru</span>
         </button>
       </div>

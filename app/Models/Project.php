@@ -16,6 +16,8 @@ class Project extends Model
         'quotation_type',
         'addendum_number',
         'user_id',
+        'client_id',
+        'deal_id',
         'client_name',
         'project_category',
         'estimated_timeline',
@@ -63,6 +65,16 @@ class Project extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(Client::class);
+    }
+
+    public function deal(): BelongsTo
+    {
+        return $this->belongsTo(Deal::class);
     }
 
     public function items(): HasMany

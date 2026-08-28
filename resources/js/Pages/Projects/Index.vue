@@ -215,26 +215,22 @@ function confirmBulkDelete() {
   <AppLayout title="Daftar Penawaran Harga & Kontrak">
     <div class="space-y-6 max-w-7xl mx-auto">
       
-      <!-- Top Action Bar Header (Simple Style) -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm shrink-0">
-              <FileText class="w-5 h-5" />
-            </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Daftar Penawaran Harga
-            </h2>
+      <!-- HEADER & ACTIONS -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Daftar Penawaran Harga</h1>
+            <span class="px-2 py-0.5 text-xs font-extrabold bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400 rounded-lg border border-emerald-200 dark:border-emerald-800">CPQ Engine</span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
-            Kelola estimasi biaya proyek software, skema berlangganan SaaS, dan dokumen adendum.
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Kelola estimasi biaya proyek software, skema berlangganan SaaS, dokumen adendum, dan ekspor proposal PDF.
           </p>
         </div>
 
-        <div class="flex items-center gap-2.5 self-start sm:self-auto shrink-0">
+        <div class="flex items-center gap-2.5 self-start sm:self-auto shrink-0 flex-wrap">
           <button
             @click="showExportModal = true"
-            class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-extrabold text-xs rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-xs"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs border border-slate-200/80 dark:border-slate-800/80 shadow-xs transition cursor-pointer active:scale-95"
           >
             <FileDown class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Ekspor Laporan</span>
@@ -242,9 +238,9 @@ function confirmBulkDelete() {
 
           <Link
             href="/projects/create"
-            class="px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 cursor-pointer active:scale-95 shrink-0"
+            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer active:scale-95 shrink-0"
           >
-            <Plus class="w-4 h-4" />
+            <Plus class="w-4 h-4 stroke-[3]" />
             <span>Buat Penawaran Baru</span>
           </Link>
         </div>

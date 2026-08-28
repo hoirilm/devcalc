@@ -84,27 +84,23 @@ const faqs = [
   <AppLayout title="Panduan Penggunaan System & Rumus Perhitungan Bisnis">
     <div class="max-w-7xl mx-auto space-y-6">
       
-      <!-- Top Guide Header -->
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div class="space-y-1">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/80 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shadow-sm shrink-0">
-              <HelpCircle class="w-5 h-5" />
-            </div>
-            <h2 class="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              Panduan System & Rumus Perhitungan Bisnis
-            </h2>
+      <!-- HEADER & ACTIONS -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black text-slate-900 dark:text-white tracking-tight">Panduan & Rumus Bisnis</h1>
+            <span class="px-2 py-0.5 text-xs font-extrabold bg-amber-50 dark:bg-amber-950 text-amber-600 dark:text-amber-400 rounded-lg border border-amber-200 dark:border-amber-800">Dokumentasi</span>
           </div>
-          <p class="text-xs text-slate-500 dark:text-slate-400">
+          <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">
             Dokumentasi lengkap alur wizard 3 langkah, rumus kalkulator harga, skema server hosting, dan ketentuan garansi SLA.
           </p>
         </div>
 
         <Link
           href="/projects/create"
-          class="px-4.5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-md shadow-indigo-600/30 transition flex items-center justify-center gap-2 self-start sm:self-auto cursor-pointer shrink-0"
+          class="inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-lg shadow-indigo-600/30 transition cursor-pointer active:scale-95 shrink-0 self-start sm:self-auto"
         >
-          <Calculator class="w-4 h-4" />
+          <Calculator class="w-4 h-4 stroke-[2.5]" />
           <span>Mulai Buat Penawaran</span>
         </Link>
       </div>
