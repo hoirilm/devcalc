@@ -35,7 +35,9 @@ import {
   User,
   FileDown,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  CheckCircle2,
+  X
 } from 'lucide-vue-next';
 
 const props = defineProps({
