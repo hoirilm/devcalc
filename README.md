@@ -1,58 +1,174 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+<div align="center">
+  <img src="public/favicon.svg" width="72" height="72" alt="DevCalc Logo" />
+  <h1>DevCalc</h1>
+  <p><strong>Software Quotation Estimator & Sales CRM Pipeline Platform</strong></p>
+  <p>Platform manajemen penawaran harga software internal berbasis web dengan formula kalkulasi bobot kompleksitas dinamis, skema penagihan multi-model, dan penerbitan nota resmi PDF otomatis.</p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+  <p>
+    <a href="https://laravel.com"><img src="https://img.shields.io/badge/Laravel-13.x-FF2D20?style=for-the-badge&logo=laravel&logoColor=white" alt="Laravel 13" /></a>
+    <a href="https://vuejs.org"><img src="https://img.shields.io/badge/Vue.js-3.x-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white" alt="Vue 3" /></a>
+    <a href="https://inertiajs.com"><img src="https://img.shields.io/badge/Inertia.js-2.x-9553E9?style=for-the-badge&logo=inertia&logoColor=white" alt="Inertia.js" /></a>
+    <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-v4.x-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white" alt="Tailwind CSS v4" /></a>
+    <a href="https://php.net"><img src="https://img.shields.io/badge/PHP-%3E%3D_8.2-777BB4?style=for-the-badge&logo=php&logoColor=white" alt="PHP 8.2+" /></a>
+  </p>
+</div>
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 📌 Tentang Proyek
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+**DevCalc** dirancang khusus untuk agensi perangkat lunak, software house, dan konsultan IT guna menyelesaikan kendala klasik dalam penyusunan proposal proyek:
+1. **Inkonsistensi Estimasi**: Mencegah perbedaan penentuan harga antar estimator/sales melalui katalog modul terstandarisasi.
+2. **Kalkulasi Kompleksitas Dinamis**: Memperhitungkan tingkat kesulitan teknis modul dengan pengali bobot kompleksitas (*Complexity Multiplier*).
+3. **Fleksibilitas Model Bisnis**: Mendukung penawaran Beli Putus (*One-off*), Berlangganan (*Subscription* bulanan/tahunan), serta model *Hybrid*.
+4. **Otomasi Dokumen**: Menerbitkan nota penawaran resmi berformat PDF berstandar IDR siap kirim ke klien hanya dalam hitungan detik.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## ✨ Fitur Utama
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### 🧮 1. Dynamic Quotation & CPQ Engine
+- **Katalog Master Modul**: Database modul fitur standar lengkap dengan harga dasar (*base price*) dan estimasi biaya sewa/pemeliharaan bulanan (*subscription price*).
+- **Pengali Bobot Kompleksitas (1.0x - 3.5x)**: Menyesuaikan harga setiap fitur berdasarkan tingkat kerumitan integrasi atau kebutuhan khusus klien.
+- **Dukungan Multi-Skema Penagihan**:
+  - **Beli Putus (*One-Off*)**: Pembayaran kontrak penuh untuk pengembangan sistem.
+  - **Berlangganan (*Subscription Flat*)**: Kombinasi *Setup Fee* awal + biaya lisensi/perawatan rutin per bulan/tahun.
+  - **Berlangganan Per-User (*SaaS Mode*)**: Perhitungan berbasis jumlah pengguna aktif (*user seats*).
+  - **Model Hybrid**: Penggabungan fitur modular khusus + biaya per-user + biaya setup.
+- **Manajemen Addendum & Revisi**: Pelacakan riwayat perubahan cakupan fitur (*scope change*) pada kontrak yang telah berjalan.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 📄 2. Automated Official PDF Generator
+- Menghasilkan dokumen penawaran PDF resmi (*letterhead*, rincian tabel modul, pembagian termin pembayaran, klausul garansi/SLA, dan blok tanda tangan).
+- Didukung oleh `barryvdh/laravel-dompdf` dengan penanganan presisi mata uang Rupiah (`IDR`).
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+### 📊 3. Sales CRM & Pipeline Tracker
+- **Kanban Board Interaktif**: Visualisasi alur kesepakatan (*Lead*, *Qualified*, *Proposal Sent*, *Negotiation*, *Won*, *Lost*).
+- **Direktori Klien & Kontak**: Manajemen database klien korporat beserta kontak person per divisi.
+- **Pencatatan Aktivitas (*Activity Log*)**: Rekam jejak meeting, panggilan telepon, email, dan catatan negosiasi.
+- **Analitik Real-Time**: Monitoring *pipeline value*, *win rate percentage*, dan proyeksi pendapatan.
 
-## Agentic Development
+### 🔒 4. Keamanan & Role-Based Access Control (RBAC)
+- Manajemen hak akses terintegrasi menggunakan `spatie/laravel-permission`:
+  - **Admin**: Akses penuh ke master data harga, konfigurasi sistem, dan semua penawaran.
+  - **Sales / Estimator**: Pembuatan penawaran dan pengelolaan deal pribadi secara terisolasi via *Eloquent Policy*.
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+---
 
-```bash
-composer require laravel/boost --dev
+## 📐 Formula Kalkulasi Penawaran
 
-php artisan boost:install
+$$\text{Item Price} = \text{Base Price} \times \text{Complexity Multiplier}$$
+
+| Model Kontrak | Formula Grand Total |
+| :--- | :--- |
+| **Putus Kontrak (One-Off)** | $\text{Grand Total} = \sum \text{Item Price}$ |
+| **Berlangganan (Flat)** | $\text{Grand Total} = \text{Setup Fee} + \left( \sum \text{Item Price} \times \text{Durasi} \right)$ |
+| **Berlangganan (Per-User)** | $\text{Grand Total} = \text{Setup Fee} + \left( (\text{User Count} \times \text{Price/User}) \times \text{Durasi} \right)$ |
+| **Hybrid** | $\text{Grand Total} = \text{Setup Fee} + \left( \left(\sum \text{Item Price} + (\text{User Count} \times \text{Price/User})\right) \times \text{Durasi} \right)$ |
+
+---
+
+## 🛠️ Tech Stack
+
+| Layer | Teknologi |
+| :--- | :--- |
+| **Backend Framework** | [Laravel 13](https://laravel.com/) (PHP 8.2+) |
+| **Frontend Framework** | [Vue.js 3](https://vuejs.org/) (Composition API, `<script setup>`) |
+| **Adapter Layer** | [Inertia.js v2](https://inertiajs.com/) |
+| **Styling & Design** | [Tailwind CSS v4](https://tailwindcss.com/) & [Lucide Icons](https://lucide.dev/) |
+| **Tipografi** | [Plus Jakarta Sans](https://fonts.google.com/specimen/Plus+Jakarta+Sans) & [Inter](https://fonts.google.com/specimen/Inter) |
+| **Database** | SQLite (Default) / MySQL / PostgreSQL |
+| **PDF Renderer** | [Laravel-DomPDF](https://github.com/barryvdh/laravel-dompdf) |
+| **Otorisasi & RBAC** | [Spatie Laravel Permission](https://spatie.be/docs/laravel-permission) |
+
+---
+
+## 🚀 Panduan Instalasi & Menjalankan Lokal
+
+### Prasyarat Sistem
+Pastikan perangkat Anda telah terpasang:
+- **PHP** >= 8.2 (dengan ekstensi `pdo_sqlite`, `mbstring`, `openssl`, `gd`)
+- **Composer** >= 2.x
+- **Node.js** >= 18.x & **NPM**
+- **Laravel Herd** / **Valet** / PHP Built-in Server
+
+### Langkah-demi-Langkah
+
+1. **Clone Repositori**:
+   ```bash
+   git clone https://github.com/username/devcalc.git
+   cd devcalc
+   ```
+
+2. **Install Dependensi PHP & Node**:
+   ```bash
+   composer install
+   npm install
+   ```
+
+3. **Konfigurasi Environment (`.env`)**:
+   ```bash
+   cp .env.example .env
+   php artisan key:generate
+   ```
+
+4. **Migrasi Database & Seeding Data Awal**:
+   ```bash
+   php artisan migrate --seed
+   ```
+
+5. **Jalankan Aplikasi**:
+   - Jika menggunakan **Laravel Herd**: Buka langsung `https://devcalc.test` di browser.
+   - Jika menggunakan **PHP CLI**:
+     ```bash
+     # Terminal 1 (Backend Server)
+     php artisan serve
+
+     # Terminal 2 (Vite Hot Reload)
+     npm run dev
+     ```
+   - Untuk kompilasi bundle produksi:
+     ```bash
+     npm run build
+     ```
+
+---
+
+## 🔑 Kredensial Pengguna Bawaan (Seeder)
+
+Setelah menjalankan `php artisan migrate --seed`, Anda dapat langsung masuk menggunakan akun default berikut:
+
+| Role | Email | Kata Sandi | Hak Akses |
+| :--- | :--- | :--- | :--- |
+| **Administrator** | `admin@devcalc.test` | `password` | Akses penuh (Master Modul, User, Setting, Seluruh Penawaran & CRM) |
+| **Sales Estimator** | `sales@devcalc.test` | `password` | Akses pembuatan penawaran & pelacakan deal pipeline personal |
+
+---
+
+## 📁 Struktur Direktori Utama
+
+```
+devcalc/
+├── app/
+│   ├── Http/Controllers/    # Controller API & Inertia Gateway
+│   ├── Models/              # Eloquent Models (Project, Module, Deal, Client, dll.)
+│   └── Policies/            # Spatie & Laravel Gate Authorization Policies
+├── database/
+│   ├── migrations/          # Struktur skema tabel database
+│   └── seeders/             # Data awal katalog modul, role, & akun demo
+├── resources/
+│   ├── css/                 # Konfigurasi Tailwind CSS v4 & theme tokens
+│   ├── js/
+│   │   ├── Components/      # Komponen UI Vue reusable (AppLogo, Modal, Charts)
+│   │   ├── Layouts/         # Shell AppLayout (Sidebar, Navbar, Theme Toggle)
+│   │   └── Pages/           # Halaman Inertia (Auth, Dashboard, Deals, Projects)
+│   └── views/               # Blade root template (app.blade.php) & PDF templates
+└── routes/
+    └── web.php              # Rute aplikasi terproteksi auth middleware
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+---
 
-## Contributing
+## 📄 Lisensi
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Proyek ini dilisensikan di bawah [MIT License](LICENSE).  
+Hak Cipta &copy; 2026 **DevCalc Engine**. Seluruh hak cipta dilindungi undang-undang.
