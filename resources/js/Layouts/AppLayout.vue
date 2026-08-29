@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { Link, usePage, router } from '@inertiajs/vue3';
+import AppLogo from '@/Components/AppLogo.vue';
 import { 
   LayoutDashboard, 
   FileText, 
@@ -168,12 +169,7 @@ const userRoleName = computed(() => {
       
       <!-- Artistic Logo Header -->
       <div class="h-20 flex items-center px-6 border-b border-slate-200/80 dark:border-slate-800/80 gap-3.5">
-        <div class="relative flex items-center justify-center">
-          <div class="absolute inset-0 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 blur-md opacity-50 animate-pulse"></div>
-          <div class="relative w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-500/30 border border-indigo-400/30">
-            <Target class="w-5 h-5 stroke-[2.5]" />
-          </div>
-        </div>
+        <AppLogo size="md" />
         <div>
           <div class="flex items-center gap-1.5">
             <h1 class="text-base font-black text-slate-900 dark:text-white tracking-tight">DevCalc</h1>
@@ -368,9 +364,7 @@ const userRoleName = computed(() => {
     <!-- Mobile Top Navigation Bar -->
     <header class="md:hidden flex items-center justify-between h-16 px-4 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center text-white">
-          <Target class="w-4 h-4" />
-        </div>
+        <AppLogo size="sm" />
         <span class="font-extrabold text-sm text-slate-900 dark:text-white">DevCalc CRM</span>
       </div>
       <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 text-slate-600 dark:text-slate-400 cursor-pointer">

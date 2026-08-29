@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6366f1" />
+      <stop offset="50%" stop-color="#7c3aed" />
+      <stop offset="100%" stop-color="#9333ea" />
+    </linearGradient>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#6366f1" flood-opacity="0.4" />
+    </filter>
+  </defs>
+  
+  <!-- Rounded Squircle Base -->
+  <rect x="4" y="4" width="56" height="56" rx="18" fill="url(#brandGrad)" filter="url(#softGlow)" />
+  
+  <!-- Inner Concentric Rings -->
+  <!-- Outer Ring -->
+  <circle cx="32" cy="32" r="16" fill="none" stroke="#ffffff" stroke-width="3" />
+  
+  <!-- Middle Ring -->
+  <circle cx="32" cy="32" r="9.5" fill="none" stroke="#ffffff" stroke-width="2.75" />
+  
+  <!-- Center Dot / Ring -->
+  <circle cx="32" cy="32" r="3.5" fill="#ffffff" />
+</svg>
