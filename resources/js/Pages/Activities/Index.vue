@@ -196,58 +196,6 @@ function getActivityMeta(type) {
       };
   }
 }
-
-// Visual Highlighter for Log Texts
-function formatLogText(text) {
-  if (!text) return '';
-  
-  let safe = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-
-  // 1. Highlight Stage Transition: "berpindah dari stage [A] ke [B]"
-  safe = safe.replace(
-    /berpindah dari stage (.+?) ke (.+?)(?=(\s\((Probabilitas:|\.|$))|$)/gi,
-    (match, fromStage, toStage) => {
-      const cleanFrom = fromStage.trim();
-      const cleanTo = toStage.trim();
-      return `berpindah dari stage <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-slate-200/80 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-extrabold text-[11px] border border-slate-300/80 dark:border-slate-600 shadow-2xs">${cleanFrom}</span> <span class="text-indigo-500 dark:text-indigo-400 font-black mx-1 inline-block">&rarr;</span> <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-purple-50 dark:bg-purple-950/90 text-purple-700 dark:text-purple-300 font-extrabold text-[11px] border border-purple-300/80 dark:border-purple-800 shadow-2xs">${cleanTo}</span>`;
-    }
-  );
-
-  // 2. Highlight Quotation Codes: #QUO-202608-001
-  safe = safe.replace(
-    /#(QUO-[A-Za-z0-9\-]+)/g,
-    '<span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-indigo-50 dark:bg-indigo-950/90 text-indigo-700 dark:text-indigo-300 font-mono font-black text-[11px] border border-indigo-200 dark:border-indigo-800 shadow-2xs">#$1</span>'
-  );
-
-  // 3. Highlight Currency: Rp 12.500.000
-  safe = safe.replace(
-    /\bRp\s?([0-9\.,]+)/g,
-    '<span class="font-extrabold text-emerald-600 dark:text-emerald-400">Rp $1</span>'
-  );
-
-  // 4. Highlight Quoted terms: 'Web Application...' or 'PT Alpha'
-  safe = safe.replace(
-    /'([^']+)'/g,
-    '<span class="font-extrabold text-slate-900 dark:text-white bg-slate-200/70 dark:bg-slate-700/70 px-1.5 py-0.5 rounded-md border border-slate-300/70 dark:border-slate-600/70">$1</span>'
-  );
-
-  // 5. Highlight Probability: (Probabilitas: 30%)
-  safe = safe.replace(
-    /\(Probabilitas:\s?(\d+%)\)/g,
-    '(Probabilitas: <span class="font-extrabold text-indigo-600 dark:text-indigo-400">$1</span>)'
-  );
-
-  // 6. Highlight Status: (status: Resmi (Generated)) or (status: Draf)
-  safe = safe.replace(
-    /status:\s?(Resmi \(Generated\)|Draf)/g,
-    'status: <span class="font-bold text-slate-800 dark:text-slate-200">$1</span>'
-  );
-
-  return safe;
-}
 </script>
 
 <template>
@@ -402,9 +350,11 @@ function formatLogText(text) {
               </div>
 
               <!-- Content Area -->
-              <div class="space-y-1 flex-1">
+              <div class="space-y-1">
                 <div class="flex items-center gap-2 flex-wrap">
-                  <span class="text-xs font-black text-slate-900 dark:text-white" v-html="formatLogText(act.title)"></span>
+                  <span class="text-xs font-black text-slate-900 dark:text-white">
+                    {{ act.title }}
+                  </span>
                   <span
                     class="px-2 py-0.5 rounded-md text-[10px] font-extrabold uppercase tracking-wider"
                     :class="getActivityMeta(act.type).badgeBg"
@@ -413,7 +363,9 @@ function formatLogText(text) {
                   </span>
                 </div>
 
-                <div v-if="act.description" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl pt-0.5" v-html="formatLogText(act.description)"></div>
+                <p v-if="act.description" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed max-w-3xl">
+                  {{ act.description }}
+                </p>
 
                 <!-- Tags / Linked entities -->
                 <div class="flex items-center gap-3 pt-1 text-[11px] text-slate-400 flex-wrap">
