@@ -1,27 +1,102 @@
-*.log
-.DS_Store
+# ==============================================================================
+# Laravel & System Environment
+# ==============================================================================
 .env
 .env.backup
 .env.production
-.phpactor.json
-.phpunit.result.cache
-/.codex
-/.cursor/
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
-/auth.json
+.env.local
+.env.*.local
+
+# ==============================================================================
+# Composer & Node Dependencies
+# ==============================================================================
+/vendor
 /node_modules
-/public/build
-/public/fonts-manifest.dev.json
-/public/hot
-/public/storage
+/auth.json
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ==============================================================================
+# Storage, Framework Cache & Logs
+# ==============================================================================
+*.log
 /storage/*.key
 /storage/pail
-/vendor
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitignore
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+/storage/framework/views/*
+!/storage/framework/views/.gitignore
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+/storage/logs/*
+!/storage/logs/.gitignore
+
+# ==============================================================================
+# Public & Build Artifacts (Vite / Inertia)
+# ==============================================================================
+/public/build
+/public/hot
+/public/storage
+/public/fonts-manifest.dev.json
+
+# ==============================================================================
+# Database (SQLite & Local Dumps)
+# ==============================================================================
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+/database/*.sqlite
+/database/*.sqlite-backup*
+/database/*.sqlite.backup*
+/database/*.sqlite-journal
+/database/*.sqlite-shm
+/database/*.sqlite-wal
+/database/dumps
+*.sql
+
+# ==============================================================================
+# Testing & Code Coverage
+# ==============================================================================
+.phpunit.result.cache
+/.phpunit.cache
+/.pest
+/coverage
+*.lcov
+
+# ==============================================================================
+# IDEs, Editors & Tooling
+# ==============================================================================
+/.idea
+/.vscode
+/.cursor
+/.cursor/
+/.codex
+/.nova
+/.zed
+/.fleet
+*.sublime-project
+*.sublime-workspace
+.phpactor.json
 _ide_helper.php
+_ide_helper_models.php
+.phpstorm.meta.php
 Homestead.json
 Homestead.yaml
+
+# ==============================================================================
+# Operating System & Temporary Files
+# ==============================================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
 Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+Desktop.ini
