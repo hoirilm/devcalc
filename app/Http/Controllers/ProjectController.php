@@ -7,6 +7,7 @@ use App\Models\Deal;
 use App\Models\DealActivity;
 use App\Models\Module;
 use App\Models\Project;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -198,16 +199,6 @@ class ProjectController extends Controller
 
             $project->deal_id = $deal->id;
             $project->saveQuietly();
-
-            DealActivity::create([
-                'deal_id' => $deal->id,
-                'client_id' => $deal->client_id,
-                'user_id' => auth()->id() ?? 1,
-                'type' => 'note',
-                'title' => "Peluang Deal Otomatis Terbit (#{$project->getQuotationCode()})",
-                'description' => "Penawaran senilai Rp " . number_format($project->grand_total, 0, ',', '.') . " berhasil dihitung dan otomatis dimasukkan ke Kanban ({$dealStage}).",
-                'performed_at' => now(),
-            ]);
         } else if ($deal = Deal::find($project->deal_id)) {
             $deal->expected_value = $project->grand_total;
             if ($project->status === 'Generated' && in_array($deal->stage, ['scoping'])) {
@@ -215,17 +206,10 @@ class ProjectController extends Controller
                 $deal->probability = 60;
             }
             $deal->save();
-
-            DealActivity::create([
-                'deal_id' => $deal->id,
-                'client_id' => $deal->client_id,
-                'user_id' => auth()->id() ?? 1,
-                'type' => 'note',
-                'title' => "Penawaran #{$project->getQuotationCode()} Dibuat",
-                'description' => "Penawaran resmi senilai Rp " . number_format($project->grand_total, 0, ',', '.') . " berhasil dihitung dan dikaitkan ke deal.",
-                'performed_at' => now(),
-            ]);
         }
+
+        // Catat log aktivitas pembuatan penawaran
+        ActivityLogger::logProjectCreated($project);
 
         return redirect()->route('projects.index')->with('success', "Penawaran #{$project->getQuotationCode()} berhasil dibuat!");
     }
@@ -349,6 +333,9 @@ class ProjectController extends Controller
             $deal->save();
         }
 
+        // Catat log pembaruan penawaran
+        ActivityLogger::logProjectUpdated($project);
+
         return redirect()->route('projects.index')->with('success', "Penawaran #{$project->getQuotationCode()} berhasil diperbarui!");
     }
 
@@ -356,6 +343,8 @@ class ProjectController extends Controller
     {
         $code = $project->getQuotationCode();
         $dealId = $project->deal_id;
+        $clientName = $project->client_name;
+        $clientId = $project->client_id;
 
         $project->delete();
 
@@ -365,6 +354,9 @@ class ProjectController extends Controller
                 $deal->delete();
             }
         }
+
+        // Catat log penghapusan penawaran
+        ActivityLogger::logProjectDeleted($code, $clientName, $clientId);
 
         return redirect()->back()->with('success', "Penawaran #{$code} berhasil dihapus.");
     }
@@ -390,6 +382,9 @@ class ProjectController extends Controller
                 }
             }
         }
+
+        // Catat log penghapusan massal
+        ActivityLogger::logBulkProjectsDeleted($count);
 
         return redirect()->back()->with('success', "{$count} dokumen penawaran harga berhasil dihapus.");
     }
@@ -435,6 +430,9 @@ class ProjectController extends Controller
         }
 
         $newProject->recalculateGrandTotal();
+
+        // Catat log penerbitan adendum
+        ActivityLogger::logAddendumCreated($project, $newProject);
 
         return redirect()->route('projects.edit', $newProject)->with('success', "Dokumen Adendum #{$newProject->getQuotationCode()} berhasil dibuat!");
     }

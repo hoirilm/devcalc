@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Module;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -68,6 +69,9 @@ class ModuleController extends Controller
             'subscription_price' => (float) ($validated['subscription_price'] ?? 0),
         ]);
 
+        // Catat log penambahan modul
+        ActivityLogger::logModuleCreated($module);
+
         return redirect()->route('modules.index')->with('success', "Modul {$module->name} berhasil ditambahkan ke katalog!");
     }
 
@@ -89,6 +93,9 @@ class ModuleController extends Controller
             'subscription_price' => (float) ($validated['subscription_price'] ?? 0),
         ]);
 
+        // Catat log pembaruan modul
+        ActivityLogger::logModuleUpdated($module);
+
         return redirect()->route('modules.index')->with('success', "Modul {$module->name} berhasil diperbarui!");
     }
 
@@ -96,6 +103,9 @@ class ModuleController extends Controller
     {
         $name = $module->name;
         $module->delete();
+
+        // Catat log penghapusan modul
+        ActivityLogger::logModuleDeleted($name);
 
         return redirect()->route('modules.index')->with('success', "Modul {$name} berhasil dihapus dari katalog.");
     }

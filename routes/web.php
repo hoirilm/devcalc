@@ -35,6 +35,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/clients/{client}/contacts', [ClientController::class, 'storeContact'])->name('clients.contacts.store');
     Route::delete('/contacts/{contact}', [ClientController::class, 'destroyContact'])->name('contacts.destroy');
 
+    Route::get('/activities', [DealActivityController::class, 'index'])->name('activities.index');
     Route::post('/activities', [DealActivityController::class, 'store'])->name('activities.store');
     Route::delete('/activities/{activity}', [DealActivityController::class, 'destroy'])->name('activities.destroy');
 

@@ -7,6 +7,7 @@ use App\Models\Deal;
 use App\Models\DealActivity;
 use App\Models\Project;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -192,6 +193,9 @@ class DealController extends Controller
 
         $deal->update($validated);
 
+        // Catat log pembaruan deal
+        ActivityLogger::logDealUpdated($deal);
+
         return redirect()->back()->with('success', "Deal '{$deal->title}' berhasil diperbarui!");
     }
 
@@ -224,15 +228,7 @@ class DealController extends Controller
         }
 
         // Catat activity perubahan stage
-        DealActivity::create([
-            'deal_id' => $deal->id,
-            'client_id' => $deal->client_id,
-            'user_id' => auth()->id() ?? 1,
-            'type' => 'note',
-            'title' => "Perubahan Stage Pipeline ke {$stageConfig['label']}",
-            'description' => "Stage berpindah dari {$oldStage} ke {$newStage}.",
-            'performed_at' => now(),
-        ]);
+        ActivityLogger::logDealStageChanged($deal, $oldStage, $newStage);
 
         return redirect()->back()->with('success', "Stage deal '{$deal->title}' berhasil diubah ke {$stageConfig['label']}!");
     }

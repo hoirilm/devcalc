@@ -146,6 +146,20 @@ function getActivityIconClass(type) {
       return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400';
   }
 }
+
+function formatLogText(text) {
+  if (!text) return '';
+  let safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  safe = safe.replace(
+    /berpindah dari stage (.+?) ke (.+?)(?=(\s\((Probabilitas:|\.|$))|$)/gi,
+    (match, fromStage, toStage) => `berpindah dari stage <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-slate-200/80 dark:bg-slate-700/80 text-slate-800 dark:text-slate-200 font-extrabold text-[10px] border border-slate-300/80 dark:border-slate-600">${fromStage.trim()}</span> <span class="text-indigo-500 dark:text-indigo-400 font-black mx-1 inline-block">&rarr;</span> <span class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-purple-50 dark:bg-purple-950/90 text-purple-700 dark:text-purple-300 font-extrabold text-[10px] border border-purple-300/80 dark:border-purple-800">${toStage.trim()}</span>`
+  );
+  safe = safe.replace(/#(QUO-[A-Za-z0-9\-]+)/g, '<span class="inline-flex items-center px-1 py-0.2 rounded bg-indigo-50 dark:bg-indigo-950/90 text-indigo-700 dark:text-indigo-300 font-mono font-black text-[10px] border border-indigo-200 dark:border-indigo-800">#$1</span>');
+  safe = safe.replace(/\bRp\s?([0-9\.,]+)/g, '<span class="font-bold text-emerald-600 dark:text-emerald-400">Rp $1</span>');
+  safe = safe.replace(/'([^']+)'/g, '<span class="font-bold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-slate-700/60 px-1 py-0.2 rounded">$1</span>');
+  safe = safe.replace(/\(Probabilitas:\s?(\d+%)\)/g, '(Probabilitas: <span class="font-extrabold text-indigo-600 dark:text-indigo-400">$1</span>)');
+  return safe;
+}
 </script>
 
 <template>
@@ -451,10 +465,10 @@ function getActivityIconClass(type) {
 
                 <div class="flex-1 space-y-1">
                   <div class="flex items-center justify-between">
-                    <span class="text-xs font-black text-slate-900 dark:text-white">{{ act.title }}</span>
+                    <span class="text-xs font-black text-slate-900 dark:text-white" v-html="formatLogText(act.title)"></span>
                     <span class="text-[10px] text-slate-400 font-mono">{{ act.performed_at_formatted }}</span>
                   </div>
-                  <p v-if="act.description" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">{{ act.description }}</p>
+                  <div v-if="act.description" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pt-0.5" v-html="formatLogText(act.description)"></div>
                   <div class="text-[10px] text-slate-400 font-bold">Oleh: {{ act.user_name }}</div>
                 </div>
               </div>

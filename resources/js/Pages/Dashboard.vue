@@ -29,10 +29,10 @@ import {
   Sparkles,
   TrendingUp,
   LayoutDashboard,
-  X,
-  CheckCircle2,
   AlertCircle,
   Download,
+  Activity,
+  User,
   FileDown,
   Clock,
   ArrowUpRight
@@ -218,6 +218,19 @@ function goToCreate() {
 function goToHelp() {
   isQuickSimulatorOpen.value = false;
   router.get('/help');
+}
+
+function formatLogText(text) {
+  if (!text) return '';
+  let safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  safe = safe.replace(
+    /berpindah dari stage (.+?) ke (.+?)(?=(\s\((Probabilitas:|\.|$))|$)/gi,
+    (match, fromStage, toStage) => `berpindah dari stage <span class="font-extrabold text-slate-800 dark:text-slate-200">${fromStage.trim()}</span> &rarr; <span class="font-extrabold text-purple-600 dark:text-purple-400">${toStage.trim()}</span>`
+  );
+  safe = safe.replace(/#(QUO-[A-Za-z0-9\-]+)/g, '<span class="font-mono font-bold text-indigo-600 dark:text-indigo-400">#$1</span>');
+  safe = safe.replace(/\bRp\s?([0-9\.,]+)/g, '<span class="font-bold text-emerald-600 dark:text-emerald-400">Rp $1</span>');
+  safe = safe.replace(/'([^']+)'/g, '<span class="font-bold text-slate-900 dark:text-white">$1</span>');
+  return safe;
 }
 </script>
 
@@ -454,10 +467,10 @@ function goToHelp() {
           <div class="space-y-3">
             <div class="flex items-center justify-between">
               <h3 class="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <Building2 class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>Aktivitas & Log CRM</span>
+                <Activity class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                <span>Log Aktivitas Sistem</span>
               </h3>
-              <Link href="/clients" class="text-[11px] font-bold text-indigo-500 hover:underline">Semua Klien &rarr;</Link>
+              <Link href="/activities" class="text-[11px] font-bold text-indigo-500 hover:underline">Semua Log &rarr;</Link>
             </div>
 
             <!-- Mini stats summary -->
@@ -474,27 +487,27 @@ function goToHelp() {
 
             <!-- Activities Timeline -->
             <div class="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktivitas Terkini</div>
+              <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Aktivitas & Log Terkini</div>
               <div v-if="recentActivities.length" class="space-y-2">
-                <div v-for="act in recentActivities.slice(0, 4)" :key="act.id" class="text-xs space-y-0.5 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40">
-                  <div class="font-bold text-slate-800 dark:text-slate-200 truncate">{{ act.title }}</div>
+                <div v-for="act in recentActivities.slice(0, 4)" :key="act.id" class="text-xs space-y-1 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-800/60">
+                  <div class="font-bold text-slate-800 dark:text-slate-200 truncate" v-html="formatLogText(act.title)"></div>
                   <div class="text-[10px] text-slate-400 flex items-center justify-between">
-                    <span>{{ act.client_name }}</span>
+                    <span class="truncate max-w-[140px] text-slate-500 font-semibold">{{ act.client_name || act.user_name }}</span>
                     <span>{{ act.performed_at_formatted }}</span>
                   </div>
                 </div>
               </div>
               <div v-else class="text-[11px] text-slate-400 italic text-center py-4">
-                Belum ada catatan aktivitas follow-up.
+                Belum ada catatan aktivitas aksi.
               </div>
             </div>
           </div>
 
           <Link
-            href="/clients"
-            class="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold text-center transition block"
+            href="/activities"
+            class="w-full py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-indigo-50 dark:hover:bg-indigo-950 text-slate-700 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 text-xs font-bold text-center transition block cursor-pointer"
           >
-            Buka Direktori Klien 360° &rarr;
+            Buka Riwayat Log Lengkap &rarr;
           </Link>
         </div>
 

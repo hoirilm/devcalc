@@ -23,7 +23,8 @@ import {
   Target,
   Sparkles,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Activity
 } from 'lucide-vue-next';
 
 const props = defineProps({
@@ -298,6 +299,23 @@ const userRoleName = computed(() => {
           </div>
 
           <Link
+            href="/activities"
+            class="group relative flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-200"
+            :class="$page.url.startsWith('/activities') 
+              ? 'bg-gradient-to-r from-indigo-600 to-indigo-500 text-white shadow-lg shadow-indigo-600/30 border border-indigo-400/30' 
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-slate-800/60 hover:text-slate-900 dark:hover:text-slate-100 hover:translate-x-1'"
+          >
+            <div 
+              class="w-7 h-7 rounded-xl flex items-center justify-center transition-all duration-200"
+              :class="$page.url.startsWith('/activities') ? 'bg-white/20 text-white' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-950 group-hover:text-indigo-600 dark:group-hover:text-indigo-400'"
+            >
+              <Activity class="w-4 h-4 stroke-[2.2]" />
+            </div>
+            <span class="flex-1">Log Aktivitas</span>
+            <div v-if="$page.url.startsWith('/activities')" class="w-1.5 h-1.5 rounded-full bg-white shadow-xs"></div>
+          </Link>
+
+          <Link
             href="/help"
             class="group relative flex items-center gap-3 px-3 py-2 rounded-2xl text-xs font-bold transition-all duration-200"
             :class="$page.url.startsWith('/help') 
@@ -369,6 +387,7 @@ const userRoleName = computed(() => {
         <Link @click="mobileMenuOpen = false" href="/clients" class="block px-3 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Klien & Kontak</Link>
         <Link @click="mobileMenuOpen = false" href="/projects" class="block px-3 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Penawaran Harga</Link>
         <Link @click="mobileMenuOpen = false" href="/modules" class="block px-3 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Katalog Modul</Link>
+        <Link @click="mobileMenuOpen = false" href="/activities" class="block px-3 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Log Aktivitas</Link>
         <Link @click="mobileMenuOpen = false" href="/help" class="block px-3 py-2 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800">Panduan & Help</Link>
       </div>
     </div>

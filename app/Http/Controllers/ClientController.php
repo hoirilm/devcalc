@@ -6,6 +6,7 @@ use App\Models\Client;
 use App\Models\Contact;
 use App\Models\Deal;
 use App\Models\User;
+use App\Services\ActivityLogger;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,7 +134,7 @@ class ClientController extends Controller
 
         // Simpan kontak utama jika diisi
         if (!empty($validated['contact_name'])) {
-            Contact::create([
+            $contact = Contact::create([
                 'client_id' => $client->id,
                 'name' => $validated['contact_name'],
                 'title' => $validated['contact_title'] ?? 'PIC Utama',
@@ -141,7 +142,11 @@ class ClientController extends Controller
                 'phone' => $validated['contact_phone'] ?? null,
                 'is_primary' => true,
             ]);
+            ActivityLogger::logContactCreated($client, $contact);
         }
+
+        // Catat log pendaftaran klien
+        ActivityLogger::logClientCreated($client);
 
         return redirect()->route('clients.show', $client->id)
             ->with('success', "Klien {$client->name} berhasil ditambahkan!");
@@ -258,6 +263,9 @@ class ClientController extends Controller
 
         $client->update($validated);
 
+        // Catat log pembaruan klien
+        ActivityLogger::logClientUpdated($client);
+
         return redirect()->back()->with('success', "Data klien {$client->name} berhasil diperbarui!");
     }
 
@@ -265,6 +273,9 @@ class ClientController extends Controller
     {
         $name = $client->name;
         $client->delete();
+
+        // Catat log penghapusan klien
+        ActivityLogger::logClientDeleted($name);
 
         return redirect()->route('clients.index')->with('success', "Klien {$name} berhasil dihapus!");
     }
@@ -284,7 +295,7 @@ class ClientController extends Controller
             $client->contacts()->update(['is_primary' => false]);
         }
 
-        $client->contacts()->create([
+        $contact = $client->contacts()->create([
             'name' => $validated['name'],
             'title' => $validated['title'] ?? 'PIC',
             'email' => $validated['email'] ?? null,
@@ -293,12 +304,23 @@ class ClientController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
+        // Catat log penambahan kontak
+        ActivityLogger::logContactCreated($client, $contact);
+
         return redirect()->back()->with('success', 'Kontak PIC berhasil ditambahkan!');
     }
 
     public function destroyContact(Contact $contact)
     {
+        $client = $contact->client;
+        $contactName = $contact->name;
         $contact->delete();
+
+        // Catat log penghapusan kontak
+        if ($client) {
+            ActivityLogger::logContactDeleted($client, $contactName);
+        }
+
         return redirect()->back()->with('success', 'Kontak PIC berhasil dihapus!');
     }
 }
