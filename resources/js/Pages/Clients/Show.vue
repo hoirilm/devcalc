@@ -5,7 +5,6 @@ import AppLayout from '@/Layouts/AppLayout.vue';
 import { 
   Building2, 
   ArrowLeft, 
-  Plus, 
   Phone, 
   Mail, 
   Globe, 
@@ -283,13 +282,6 @@ function formatLogText(text) {
                 <FileText class="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 <h2 class="text-sm font-black text-slate-900 dark:text-white">Dokumen Penawaran DevCalc ({{ projects.length }})</h2>
               </div>
-
-              <Link
-                :href="`/projects/create?client_id=${client.id}`"
-                class="px-3 py-1 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 transition"
-              >
-                + Buat Penawaran
-              </Link>
             </div>
 
             <!-- List Projects -->
@@ -352,14 +344,6 @@ function formatLogText(text) {
                 <Kanban class="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 <h2 class="text-sm font-black text-slate-900 dark:text-white">Peluang Proyek & Deals ({{ deals.length }})</h2>
               </div>
-
-              <Link
-                :href="`/projects/create?client_id=${client.id}`"
-                class="px-3 py-1.5 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-bold hover:bg-indigo-100 transition inline-flex items-center gap-1.5 cursor-pointer shadow-2xs"
-              >
-                <Plus class="w-3.5 h-3.5 stroke-[3]" />
-                <span>Buat Penawaran CPQ</span>
-              </Link>
             </div>
 
             <!-- List Deals -->
