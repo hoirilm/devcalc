@@ -140,7 +140,7 @@
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 22px;
+            margin-bottom: 8px;
             table-layout: fixed;
         }
 
@@ -225,6 +225,65 @@
             font-size: 10px;
             color: #334155;
             line-height: 1.5;
+        }
+
+        .table-footnote {
+            font-size: 8.5px;
+            color: #64748b;
+            margin-bottom: 16px;
+            padding-left: 2px;
+            font-style: italic;
+            line-height: 1.4;
+        }
+
+        .unified-note-card {
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .unified-note-header {
+            background-color: #f1f5f9;
+            border-bottom: 1px solid #cbd5e1;
+            padding: 7px 12px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #0f172a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .unified-note-body {
+            padding: 10px 12px;
+            font-size: 9.5px;
+            color: #334155;
+            line-height: 1.5;
+        }
+
+        .note-section {
+            margin-bottom: 0;
+        }
+
+        .note-subheading {
+            font-size: 9px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 3px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .note-text {
+            font-size: 9.5px;
+            color: #334155;
+            line-height: 1.45;
+        }
+
+        .note-divider {
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px dashed #cbd5e1;
         }
 
         .totals-card {
@@ -415,12 +474,7 @@
 
 
 
-    @if($project->isAddendum() && $project->addendum_notes)
-        <div style="background: #f8fafc; border-left: 3px solid #0f172a; padding: 10px 14px; margin-bottom: 16px; border-radius: 0 4px 4px 0; border: 1px solid #cbd5e1;">
-            <div style="font-size: 9.5px; font-weight: bold; color: #0f172a; text-transform: uppercase; margin-bottom: 2px;">Ruang Lingkup & Catatan Adendum:</div>
-            <div style="font-size: 9.5px; color: #334155; line-height: 1.4;">{{ $project->addendum_notes }}</div>
-        </div>
-    @endif
+
 
     <!-- Line Items Table -->
     <table class="items-table">
@@ -516,35 +570,48 @@
         </tbody>
     </table>
 
+    <div class="table-footnote">
+        @if($project->billing_type === 'subscription')
+            * Keterangan: @if($project->subscription_basis === 'per_user')Biaya per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}) berbasis kapasitas {{ $project->user_count }} pengguna aktif. @elseif($project->subscription_basis === 'hybrid')Biaya per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}) menggabungkan sewa modul & kuota {{ $project->user_count }} pengguna aktif. @else Biaya modul dihitung per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}), mencakup pemeliharaan & infrastruktur cloud. @endif Seluruh nominal diterbitkan dalam mata uang Rupiah (Rp).
+        @else
+            * Keterangan: Harga terhitung merupakan hasil perkalian harga dasar modul dengan bobot kompleksitas pengerjaan. Seluruh nominal diterbitkan dalam mata uang Rupiah (Rp).
+        @endif
+    </div>
+
     <!-- Summary and Total -->
     <table class="summary-table">
         <tr>
             <td class="rate-note-col">
-                <div class="rate-box">
-                    @if($project->billing_type === 'subscription')
-                        <strong style="text-transform: uppercase; font-size: 9px; color: #0f172a;">Ketentuan Skema Berlangganan (SaaS):</strong><br>
-                        @if($project->subscription_basis === 'per_user')
-                            Tagihan dihitung berdasarkan kapasitas pengguna aktif ({{ $project->user_count }} User) per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}).
-                        @elseif($project->subscription_basis === 'hybrid')
-                            Tagihan menggabungkan sewa infrastruktur fitur modul dan kuota pengguna aktif ({{ $project->user_count }} User) per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}).
-                        @else
-                            Biaya modul dihitung per siklus ({{ $project->billing_cycle === 'yearly' ? 'tahunan' : 'bulanan' }}), mencakup server & maintenance rutin.
+                <div class="unified-note-card">
+                    <div class="unified-note-header">
+                        {{ $project->isAddendum() ? 'Ruang Lingkup & Catatan Adendum' : 'Catatan Penawaran & Ruang Lingkup' }}
+                    </div>
+                    <div class="unified-note-body">
+                        @if($project->isAddendum() && $project->addendum_notes)
+                            <div class="note-section">
+                                @if($project->notes)
+                                    <div class="note-subheading">Ringkasan Amandemen:</div>
+                                @endif
+                                <div class="note-text">{!! nl2br(e($project->addendum_notes)) !!}</div>
+                            </div>
                         @endif
-                    @else
-                        <strong style="text-transform: uppercase; font-size: 9px; color: #0f172a;">Ketentuan Perhitungan Standar:</strong><br>
-                        Harga dihitung dari harga dasar modul dikalikan bobot kompleksitas pengerjaan.
-                    @endif
-                    <div style="font-size: 9px; color: #64748b; margin-top: 4px;">
-                        * Seluruh nominal penawaran diterbitkan dalam mata uang Rupiah (Rp).
+
+                        @if($project->notes)
+                            <div class="note-section {{ ($project->isAddendum() && $project->addendum_notes) ? 'note-divider' : '' }}">
+                                @if($project->isAddendum() && $project->addendum_notes)
+                                    <div class="note-subheading">Catatan Teknis / Integrasi:</div>
+                                @endif
+                                <div class="note-text">{!! nl2br(e($project->notes)) !!}</div>
+                            </div>
+                        @endif
+
+                        @if(!$project->notes && (!$project->isAddendum() || !$project->addendum_notes))
+                            <div class="note-text" style="color: #64748b; font-style: italic;">
+                                Penawaran harga ini mencakup implementasi fitur sesuai spesifikasi di atas, pengujian menyeluruh (QA), serta instalasi pada infrastruktur server yang disepakati.
+                            </div>
+                        @endif
                     </div>
                 </div>
-
-                @if($project->notes)
-                    <div class="rate-box" style="margin-top: 10px; background-color: #f8fafc; border: 1px solid #cbd5e1; border-left: 3px solid #0f172a; color: #1e293b;">
-                        <strong style="text-transform: uppercase; font-size: 9px; color: #0f172a;">Catatan Penawaran / Scope Notes:</strong><br>
-                        <div style="font-size: 9.5px; color: #334155; margin-top: 3px; line-height: 1.4;">{{ $project->notes }}</div>
-                    </div>
-                @endif
             </td>
             <td class="totals-col">
                 <table class="totals-card">
