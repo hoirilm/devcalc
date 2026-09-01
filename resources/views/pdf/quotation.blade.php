@@ -395,6 +395,41 @@
                 <div class="meta-box">
                     <div class="meta-heading">Ditujukan Kepada (Klien)</div>
                     <div class="meta-client-name">{{ $project->client_name }}</div>
+
+                    @php
+                        $client = $project->client;
+                        $pic = $client?->primaryContact();
+                        $contactEmail = $pic?->email ?? $client?->email;
+                        $contactPhone = $pic?->phone ?? $client?->phone;
+                    @endphp
+
+                    @if($pic)
+                        <div style="font-size: 10px; color: #1e293b; margin-top: 3px;">
+                            <span style="color: #64748b;">u.p.</span> <strong>{{ $pic->name }}</strong>
+                            @if($pic->title)
+                                <span style="color: #64748b; font-size: 9px;">({{ $pic->title }})</span>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if($contactEmail || $contactPhone)
+                        <div style="font-size: 9.5px; color: #475569; margin-top: 2px;">
+                            @if($contactEmail)
+                                <span>{{ $contactEmail }}</span>
+                            @endif
+                            @if($contactEmail && $contactPhone)
+                                <span style="color: #94a3b8; margin: 0 3px;">•</span>
+                            @endif
+                            @if($contactPhone)
+                                <span>{{ $contactPhone }}</span>
+                            @endif
+                        </div>
+                    @elseif($client?->address)
+                        <div style="font-size: 9px; color: #64748b; margin-top: 2px; line-height: 1.3;">
+                            {{ $client->address }}
+                        </div>
+                    @endif
+
                     @if($project->project_category)
                         <div style="font-size: 10px; color: #1e293b; font-weight: bold; margin-top: 4px;">
                             <span style="color: #64748b; font-weight: normal;">Kategori Solusi:</span> {{ $project->project_category }}
@@ -405,9 +440,6 @@
                             <span style="color: #64748b; font-weight: normal;">Estimasi Timeline:</span> {{ $project->estimated_timeline }}
                         </div>
                     @endif
-                    <div style="font-size: 9px; color: #64748b; margin-top: 5px;">
-                        Dokumen Resmi Penawaran Pengembangan Perangkat Lunak
-                    </div>
                 </div>
             </td>
             <td class="meta-col">

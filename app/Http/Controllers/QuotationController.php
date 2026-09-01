@@ -17,7 +17,7 @@ class QuotationController extends Controller
         Gate::authorize('view', $project);
 
         // Ensure relations are loaded
-        $project->load(['user', 'items.module']);
+        $project->load(['user', 'client.contacts', 'items.module']);
 
         // Recalculate grand total to ensure precision
         $project->recalculateGrandTotal();
